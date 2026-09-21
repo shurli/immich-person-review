@@ -1,156 +1,214 @@
 # Immich Person Review
 
-## Version 0.5.0
+Kleine, eigenständige Docker-Web-App zum Prüfen und Korrigieren von Immich-Personenzuordnungen.
 
-- Neue Ansicht **Unbenannte Personen**, angelehnt an die Immich-Personenübersicht.
-- Pro sichtbarer unbenannter Person: Thumbnail, exakte Anzahl zugeordneter Faces und Anzahl verschiedener Aufnahmetage.
-- Kennzahlen werden lazy beim Scrollen über die Immich-API berechnet und serverseitig kurz gecacht.
-- Direktaktion **Verstecken** über den stabilen People-Bulk-Update-Endpunkt.
-- Direktaktion **Zusammenführen** mit Zielperson-Auswahl über den stabilen Merge-Endpunkt.
-- Zusätzliche API-Rechte für diese Ansicht: `person.update` und `person.merge`; für die Statistik weiterhin `face.read`, `person.read` und `asset.read`.
+## Version 0.8.0
 
+Neu ist die Ansicht **Vektor-Cluster** für eine ausgewählte Person:
 
-## Version erkennen
+- liest die Face-Embeddings ausschließlich lesend aus PostgreSQL,
+- berechnet den arithmetischen Durchschnittsvektor und die normierte Mittelrichtung,
+- misst für jedes Face die Cosinusdistanz zur Mittelrichtung,
+- projiziert den lokalen Ausschnitt der 512-dimensionalen Einheitssphäre in eine radiale 2D-Darstellung,
+- hält dabei den Radius jedes Punkts exakt gleich seiner echten Cosinusdistanz,
+- bietet einen frei einstellbaren Distanzradius sowie P90/P95-Presets,
+- zeigt die am wenigsten ähnlichen Gesichter außerhalb des Radius zuerst,
+- erlaubt Mehrfachauswahl und das Lösen der Personenzuordnung,
+- exportiert die berechneten Cluster-Daten als JSON.
 
-Die laufende Version wird an zwei Stellen angezeigt:
+Die App schreibt **nicht direkt** in die Immich-Datenbank. Änderungen an Personenzuordnungen laufen weiterhin über die Immich-REST-API.
 
-- beim Containerstart im Log, z. B. `Immich Person Review v0.4.3`
-- oben links in der Web-App als Versions-Badge
+## Wichtiger Hinweis zur Datenbankanbindung
 
-Die Release-Archive sind versioniert, enthalten aber immer denselben Projektordner `immich-person-review/`. Dadurch bleibt der Pfad bei Updates konstant.
+Immich stellt die Face-Embeddings derzeit nicht über seine öffentliche REST-API bereit. Die Clusteransicht liest deshalb die internen Tabellen `asset`, `asset_face` und `face_search` direkt. Dieser Teil ist versionsabhängig: Nach größeren Immich-Upgrades sollte die Clusteransicht geprüft werden, bevor Zuordnungen geändert werden.
 
+Für die übrigen Funktionen reicht weiterhin die API-Anbindung. Ohne PostgreSQL-Zugang zeigt die App die bisherigen Review-Ansichten; nur der Tab **Vektor-Cluster** ist nicht verfügbar.
 
-## Version 0.3.0
-
-- Pro Face gibt es jetzt **„Markierung entfernen“**. Dabei wird über die stabile Immich-API `DELETE /faces/{id}` genau dieses Face entfernt, ohne es einer anderen Person zuzuweisen.
-- Batch-Aktion **„Alle „vor Geburt“ Zuordnungen lösen“** für Personen mit Geburtsdatum. Sie sucht paginiert alle passenden Assets, sammelt die Treffer zuerst vollständig und löst anschließend nur die Personenzuordnungen; die Face-Markierungen bleiben erhalten.
-- Für die Löschfunktionen ist zusätzlich die API-Berechtigung `face.delete` erforderlich.
-
-### Bereits seit 0.2.0
-
-- Face-Abruf korrigiert: `GET /faces?id=<asset-id>` statt des ungültigen Parameters `assetId`.
-- Asset-Timeline ist paginiert (standardmäßig 40 Fotos pro Seite).
-- Nächste Seite wird automatisch per Infinite Scroll geladen; manueller Ladebutton als Fallback.
-- Face-Daten werden lazy geladen, sobald eine Fotokarte in die Nähe des Viewports kommt.
-- Metadata-Suche lädt keine unnötigen EXIF-/People-Payloads mehr.
-
-
-Eine kleine, eigenständige Review-Oberfläche für Immich-Personenerkennung. Sie nutzt ausschließlich die öffentliche/stabile Immich REST API und greift nicht auf die Immich-Datenbank zu.
-
-## Funktionen
+## Funktionsumfang
 
 - Person auswählen oder suchen
-- Alle Bilder der Person chronologisch anzeigen
-- Vollständiges Foto plus markierter Face-Bounding-Box
-- Parallel ein großer Gesichtsausschnitt
-- Alter zum Aufnahmezeitpunkt aus `birthDate` und `fileCreatedAt`
-- Falsch zugeordnetes Face direkt einer anderen Person zuweisen
-- Neue Person anlegen und Face sofort zuweisen
-- API-Key bleibt serverseitig und wird nicht an den Browser ausgeliefert
+- Personen-Timeline paginiert und chronologisch anzeigen
+- vollständiges Asset plus Face-Bounding-Box und vergrößerter Gesichtsausschnitt
+- Alter zum Aufnahmezeitpunkt aus Geburtsdatum und Aufnahmedatum
+- Face einer anderen oder einer neuen Person zuweisen
+- Personenzuordnung lösen, ohne Face-Markierung und Embedding zu löschen
+- Face-Markierung vollständig entfernen
+- Zuordnungen vor dem Geburtsdatum gesammelt prüfen und lösen
+- unbenannte Personen anzeigen, verstecken oder zusammenführen
+- beste Personen-Thumbnails setzen
+- doppelte Face-Boxen einer Person innerhalb desselben Assets bereinigen
+- 512D-Vektorcluster mit Distanzradius, Ausreißergalerie und Mehrfachkorrektur
 
-## Benötigte Immich API-Rechte
+## Benötigte Immich-API-Rechte
 
-Für den Review-Betrieb mindestens:
+Je nach verwendeter Funktion:
 
 - `person.read`
-- `person.create` (nur für "Neue Person" und Zuordnung lösen)
-- `person.update` (für „Person verstecken“)
-- `person.merge` (für „Person zusammenführen“)
+- `person.create`
+- `person.update`
+- `person.delete`
+- `person.merge`
 - `asset.read`
 - `asset.view`
 - `face.read`
 - `face.update`
-- `face.delete` (nur für „Markierung entfernen“)
+- `face.delete`
+
+Für das Lösen einer Zuordnung verwendet die App ausschließlich offizielle API-Aufrufe: Das Face wird kurz einer versteckten temporären Person zugewiesen; anschließend wird diese Person gelöscht. Dadurch bleibt die Face-Markierung erhalten und ihre Personenzuordnung wird leer.
+
+## Read-only-Datenbankbenutzer anlegen
+
+Der Review-Container benötigt für die Clusteransicht nur `SELECT` auf drei Tabellen. Beispiel, als PostgreSQL-Administrator in der Immich-Datenbank ausgeführt:
+
+```sql
+CREATE ROLE immich_person_review
+  LOGIN
+  PASSWORD 'EIN_LANGES_ZUFAELLIGES_PASSWORT';
+
+GRANT CONNECT ON DATABASE immich TO immich_person_review;
+GRANT USAGE ON SCHEMA public TO immich_person_review;
+GRANT SELECT ON TABLE
+  public.asset,
+  public.asset_face,
+  public.face_search
+TO immich_person_review;
+```
+
+Nach einer Immich-Migration, die eine dieser Tabellen neu erstellt, müssen die `GRANT`-Anweisungen gegebenenfalls erneut ausgeführt werden. Die Verwendung des PostgreSQL-Superusers ist nicht empfohlen.
 
 ## Start mit Docker Compose
 
-1. API-Key in `.env` ablegen:
+### 1. Konfiguration anlegen
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-2. `IMMICH_URL` und `IMMICH_API_KEY` in `.env` setzen. `docker-compose.yml` übernimmt beide Werte über `env_file` direkt aus `.env`.
+Mindestens erforderlich:
 
-3. Starten:
+```dotenv
+IMMICH_URL=http://immich-server:2283
+IMMICH_API_PREFIX=/api
+IMMICH_API_KEY=DEIN_API_KEY
+```
+
+Für die Clusteransicht zusätzlich:
+
+```dotenv
+IMMICH_DB_HOST=database
+IMMICH_DB_PORT=5432
+IMMICH_DB_USER=immich_person_review
+IMMICH_DB_PASSWORD=DEIN_READ_ONLY_PASSWORT
+IMMICH_DB_NAME=immich
+```
+
+Alternativ kann eine vollständige Verbindungszeichenfolge in `IMMICH_DB_URL` gesetzt werden.
+
+### 2. Netzwerk wählen
+
+Liegt PostgreSQL über eine normale IP/DNS-Adresse erreichbar vor, genügt:
 
 ```bash
 docker compose up -d --build
 ```
 
-4. Öffnen:
+Soll die App den Immich-Dienstnamen `database` im bestehenden Immich-Docker-Netz verwenden, zuerst den Netzwerknamen prüfen:
+
+```bash
+docker network ls
+```
+
+Dann in `.env` setzen, zum Beispiel:
+
+```dotenv
+IMMICH_DOCKER_NETWORK=immich_default
+```
+
+und mit dem Overlay starten:
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.immich-network.yml \
+  up -d --build
+```
+
+### 3. Oberfläche öffnen
 
 ```text
 http://DEIN-SERVER:3030
 ```
 
-## Falls Immich unter einem anderen API-Prefix läuft
-
-Standardmäßig wird `/api` verwendet. Das ergibt z. B.:
-
-```text
-IMMICH_URL=http://immich-server:2283
-IMMICH_API_PREFIX=/api
-```
-
-Wenn `IMMICH_URL` bereits auf den API-Pfad zeigt, setze:
-
-```yaml
-IMMICH_API_PREFIX: ""
-```
-
 ## Nur Docker
 
 ```bash
-docker build -t immich-person-review .
-docker run -d --name immich-person-review \
+docker build -t immich-person-review:0.8.0 .
+
+docker run -d \
+  --name immich-person-review \
+  --restart unless-stopped \
   -p 3030:3000 \
-  -e IMMICH_URL=https://photos.example.com \
+  --network immich_default \
+  -e IMMICH_URL=http://immich-server:2283 \
   -e IMMICH_API_PREFIX=/api \
-  -e IMMICH_API_KEY='DEIN_KEY' \
-  immich-person-review
+  -e IMMICH_API_KEY='DEIN_API_KEY' \
+  -e IMMICH_DB_HOST=database \
+  -e IMMICH_DB_PORT=5432 \
+  -e IMMICH_DB_USER=immich_person_review \
+  -e IMMICH_DB_PASSWORD='DEIN_READ_ONLY_PASSWORT' \
+  -e IMMICH_DB_NAME=immich \
+  immich-person-review:0.8.0
 ```
 
-## Architektur
+## Cluster-Mathematik
 
-Browser -> Review-Container -> Immich REST API
+Jedes Embedding wird zuerst L2-normalisiert. Aus allen Embeddings einer Person wird der komponentenweise arithmetische Mittelwert berechnet. Seine normierte Richtung ist das Clusterzentrum `μ` auf der Einheitssphäre.
 
-Der Browser kennt den Immich API-Key nicht. Bilder werden ebenfalls über den Review-Container gestreamt, damit kein API-Key als Query-Parameter im Browser auftaucht.
+Für ein normalisiertes Face-Embedding `x` verwendet die App:
 
-## Hinweise
+```text
+Cosinusdistanz d(x, μ) = 1 - x · μ
+```
 
-- Es werden keine Immich-internen Timeline-Endpunkte verwendet.
-- Die Asset-Liste wird über `POST /search/metadata` mit `personIds` geladen.
-- Gesichter werden per `GET /faces?id=<asset-id>` geladen.
-- Die Korrektur folgt dem aktuellen Immich-Endpunkt `PUT /faces/{personId}` mit `{ id: faceId }`: die Zielperson steht im Pfad, das umzuhängende Face im Body.
-- Bei sehr großen Personen-Clustern werden die Assets serverseitig seitenweise geladen; Face-Daten werden nur in der Nähe des Viewports geladen.
-- „Markierung entfernen“ löscht das Face-Objekt über die offizielle Immich-API.
-- „Zuordnung lösen“ behält das Face bei und entfernt nur die Personenzuordnung. Weil Immich aktuell keinen direkten Public-API-Endpunkt für `personId = null` anbietet, verwendet die App ausschließlich offizielle API-Aufrufe: temporäre versteckte Person anlegen, Face dorthin umhängen, temporäre Person löschen und anschließend verifizieren, dass dasselbe Face mit `person: null` erhalten blieb.
-- Der „vor Geburt“-Batch nutzt `takenBefore` in `POST /search/metadata`, sammelt zuerst alle Assets und beginnt erst danach mit dem Lösen der Zuordnungen. Dadurch verschiebt die laufende Mutation nicht die Such-Pagination. Die Face-Markierungen bleiben bestehen.
+Kleine Werte bedeuten hohe Ähnlichkeit zur Cluster-Mitte. Die radiale Position im Diagramm ist genau `d(x, μ)`. Nur der Winkel wird durch eine PCA im Tangentialraum auf zwei Dimensionen reduziert. Deshalb stimmt die Auswahl „innerhalb/außerhalb des Kreises“ mit dem tatsächlichen 512D-Abstand überein, obwohl die Winkel und Nachbarschaften in der 2D-Ansicht nur eine Projektion sind.
 
+Der gewählte Radius ist eine **maximale** Distanz zur Cluster-Mitte. Er ist nicht identisch mit Immichs eigener Erkennungsschwelle, weil Immich Gesichter beziehungsweise Nachbarn untereinander clustert, während diese Review-Ansicht jedes Face mit der Mittelrichtung der ausgewählten Person vergleicht.
 
-## v0.4.0
+## Konfigurationsvariablen
 
-- Sticky-Header korrigiert: kein sichtbarer Spalt mehr zwischen Hauptkopf und Personenleiste; Karten haben einen Scroll-Abstand.
-- Neuer Button **Zuordnung lösen** ohne Sicherheitsabfrage. Nach Erfolg scrollt die Ansicht automatisch zum nächsten Foto.
-- Der Face-Datensatz bleibt bestehen, nur die Personenzuordnung wird gelöst. Dafür braucht der API-Key zusätzlich `person.create`, `face.update` und `person.delete`.
-- Leere `204 No Content`-Antworten werden sauber behandelt; dadurch gibt es beim **Markierung entfernen** keinen JSON-Parse-Fehler mehr.
-- `docker-compose.yml` liest `IMMICH_URL` und `IMMICH_API_KEY` direkt aus `.env`.
+| Variable | Bedeutung | Standard |
+|---|---|---|
+| `IMMICH_URL` | Basis-URL des Immich-Servers | erforderlich |
+| `IMMICH_API_PREFIX` | API-Prefix | `/api` |
+| `IMMICH_API_KEY` | serverseitig verwendeter API-Key | erforderlich |
+| `IMMICH_DB_URL` | vollständige PostgreSQL-Verbindungszeichenfolge | leer |
+| `IMMICH_DB_HOST` | PostgreSQL-Host, falls keine URL verwendet wird | leer |
+| `IMMICH_DB_PORT` | PostgreSQL-Port | `5432` |
+| `IMMICH_DB_USER` | PostgreSQL-Benutzer | `postgres` |
+| `IMMICH_DB_PASSWORD` | PostgreSQL-Passwort | leer |
+| `IMMICH_DB_NAME` | Datenbankname | `immich` |
+| `IMMICH_DB_SSL` | TLS-Verbindung aktivieren | `false` |
+| `VECTOR_CLUSTER_DEFAULT_RADIUS` | fester Startwert; leer bedeutet P90 je Person | leer |
+| `VECTOR_CLUSTER_MAX_FACES` | Sicherheitslimit je Person | `30000` |
 
+## Architektur und Datenschutz
 
-## v0.4.3
+```text
+Browser
+  └─ Review-Container
+       ├─ Immich REST API       (Lesen und alle Änderungen)
+       └─ PostgreSQL read-only  (nur Embeddings und Face-/Asset-Metadaten)
+```
 
-Die Personen-Timeline filtert nicht mehr auf Bilder. Es werden alle von Immich fuer die Person gefundenen Assets (insbesondere Bilder und Videos) paginiert geladen. Videos werden in der Review-Ansicht ueber ihr Immich-Thumbnail dargestellt; Face-Pruefung und Zuordnungsaktionen funktionieren identisch.
+API-Key und Datenbankpasswort werden nicht an den Browser ausgegeben. Einzelne 512D-Face-Embeddings werden ebenfalls nicht an den Browser gesendet; der Server liefert nur Durchschnittsvektoren, Distanzen, Projektionskoordinaten und die für die Galerie benötigten Metadaten.
 
+## Entwicklung und Tests
 
-## v0.7.0
+```bash
+npm install
+npm test
+npm start
+```
 
-- Klick auf ein Personenbild öffnet die Person direkt in der konfigurierten Immich-Weboberfläche.
-- Batch „Beste Thumbnails setzen“ für sichtbare unbenannte Personen. Gewählt wird das Face mit der größten Bounding-Box-Pixelfläche im Originalasset.
-- Das Setzen des Feature-Face-Thumbnails nutzt ausschließlich die Immich API und benötigt `person.update`.
-
-
-## v0.7.0 – Doppelte Person-Faces bereinigen
-
-In der Ansicht **Unbenannte Personen** gibt es den globalen Batch **Doppelte Face-Boxen bereinigen**. Er scannt alle Personen (inklusive versteckter) und deren Assets ausschließlich über die Immich-API. Ist dieselbe Person in einem Asset mehrfach markiert, bleibt die kleinste Bounding-Box erhalten und alle größeren Face-Markierungen dieser Person werden nach einer Vorschau gelöscht. Benötigte zusätzliche Berechtigung: `face.delete`.
+Der Docker-Build installiert die Node-Abhängigkeiten automatisch.

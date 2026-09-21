@@ -1,0 +1,10 @@
+services:
+  immich-person-review:
+    networks:
+      - default
+      - immich
+
+networks:
+  immich:
+    external: true
+    name: "${IMMICH_DOCKER_NETWORK:-immich_default}"

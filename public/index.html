@@ -43,10 +43,123 @@
         <button id="batchBeforeBirthBtn" class="btn detach hidden" type="button">Alle „vor Geburt“ Zuordnungen lösen</button>
         <label class="toggle"><input id="hideReviewed" type="checkbox" /> korrigierte ausblenden</label>
       </div>
-      <div id="timeline" class="timeline"></div>
-      <div id="pageSentinel" class="page-sentinel" aria-hidden="true"></div>
-      <div class="page-controls"><div id="pageStatus" class="muted"></div><button id="loadMoreBtn" class="btn ghost hidden">Weitere Assets laden</button></div>
-      <div id="empty" class="panel empty hidden">Keine Assets gefunden.</div>
+
+      <div class="person-view-tabs panel" role="tablist" aria-label="Personenansicht">
+        <button id="timelineViewBtn" class="person-view-tab active" type="button" role="tab" aria-selected="true">Chronologisch prüfen</button>
+        <button id="clusterViewBtn" class="person-view-tab" type="button" role="tab" aria-selected="false">Vektor-Cluster <span id="clusterDbBadge" class="mini-badge">DB</span></button>
+      </div>
+
+      <section id="timelineView">
+        <div id="timeline" class="timeline"></div>
+        <div id="pageSentinel" class="page-sentinel" aria-hidden="true"></div>
+        <div class="page-controls"><div id="pageStatus" class="muted"></div><button id="loadMoreBtn" class="btn ghost hidden">Weitere Assets laden</button></div>
+        <div id="empty" class="panel empty hidden">Keine Assets gefunden.</div>
+      </section>
+
+      <section id="clusterView" class="cluster-shell hidden" aria-labelledby="clusterTitle">
+        <div id="clusterLoading" class="cluster-message">Vektoren und Gesichter werden aus der Immich-Datenbank geladen…</div>
+        <div id="clusterError" class="cluster-message cluster-error hidden"></div>
+
+        <div id="clusterDashboard" class="hidden">
+          <div class="cluster-summary-grid">
+            <article class="cluster-summary-card">
+              <span>Gesichter mit Embedding</span>
+              <strong id="clusterFaceCount">0</strong>
+              <small id="clusterMissingCount">0 ohne Embedding</small>
+            </article>
+            <article class="cluster-summary-card">
+              <span>Clusterzentrum</span>
+              <strong>μ</strong>
+              <small id="clusterCentroidMeta">normierte Mittelrichtung</small>
+            </article>
+            <article class="cluster-summary-card">
+              <span>Mittlere Distanz</span>
+              <strong id="clusterMeanDistance">0,000</strong>
+              <small>Cosinusdistanz zum Mittelwert</small>
+            </article>
+            <article class="cluster-summary-card">
+              <span>Größte Distanz</span>
+              <strong id="clusterMaxDistance">0,000</strong>
+              <small id="clusterMaxDistanceMeta">entferntestes Gesicht</small>
+            </article>
+          </div>
+
+          <div class="cluster-layout">
+            <section class="cluster-panel cluster-plot-panel">
+              <div class="cluster-panel-head">
+                <div>
+                  <h2 id="clusterTitle">Vektor-Cluster</h2>
+                  <p>Radiale Tangentialraum-PCA: Der Radius ist die echte 512D-Cosinusdistanz, der Winkel ist eine 2D-Projektion.</p>
+                </div>
+                <button id="clusterReloadBtn" class="cluster-button subtle" type="button">Neu berechnen</button>
+              </div>
+              <div id="clusterCanvasWrap" class="cluster-canvas-wrap">
+                <canvas id="clusterCanvas" aria-label="2D-Projektion des Gesichtsvektor-Clusters"></canvas>
+                <div id="clusterTooltip" class="cluster-tooltip hidden"></div>
+              </div>
+              <div class="cluster-legend">
+                <span><i class="legend-dot inside"></i> innerhalb Radius</span>
+                <span><i class="legend-dot outside"></i> außerhalb Radius</span>
+                <span><i class="legend-center"></i> Durchschnittsvektor μ</span>
+              </div>
+            </section>
+
+            <aside class="cluster-panel cluster-controls-panel">
+              <div class="cluster-control-title">Maximaler Vektorabstand</div>
+              <p class="cluster-control-copy">Alle Faces mit größerer Cosinusdistanz zur normierten Mittelrichtung werden als Ausreißer angezeigt.</p>
+              <div class="cluster-radius-row">
+                <input id="clusterRadiusRange" type="range" min="0" max="1" step="0.005" value="0.45" />
+                <input id="clusterRadiusInput" class="cluster-radius-number" type="number" min="0" max="2" step="0.005" value="0.45" inputmode="decimal" />
+              </div>
+              <div class="cluster-presets">
+                <button id="clusterPresetP90" class="cluster-button subtle" type="button">P90</button>
+                <button id="clusterPresetP95" class="cluster-button subtle" type="button">P95</button>
+                <button id="clusterPresetImmich" class="cluster-button subtle" type="button" title="Fester Vergleichsradius; nicht identisch mit Immichs Erkennungsschwelle">0,50</button>
+              </div>
+              <div class="cluster-counts">
+                <div><span class="count-dot inside"></span><strong id="clusterInsideCount">0</strong><small>innerhalb</small></div>
+                <div><span class="count-dot outside"></span><strong id="clusterOutsideCount">0</strong><small>außerhalb</small></div>
+                <div><span class="count-dot selected"></span><strong id="clusterSelectedCount">0</strong><small>markiert</small></div>
+              </div>
+              <div class="cluster-help-box">
+                <strong>Wichtig</strong>
+                <span>Der Radius entspricht exakt der Cosinusdistanz im hochdimensionalen Raum. Die Treffer sind Prüfkandidaten, keine automatische Aussage über eine falsche Zuordnung.</span>
+              </div>
+            </aside>
+          </div>
+
+          <section class="cluster-panel cluster-outliers-panel">
+            <div class="cluster-panel-head cluster-outlier-head">
+              <div>
+                <h2>Assets außerhalb des Radius</h2>
+                <p id="clusterOutlierSummary">Die am wenigsten ähnlichen Gesichter stehen zuerst.</p>
+              </div>
+              <div class="cluster-selection-actions">
+                <button id="clusterSelectAllBtn" class="cluster-button subtle" type="button">Alle markieren</button>
+                <button id="clusterClearSelectionBtn" class="cluster-button subtle" type="button">Auswahl leeren</button>
+                <button id="clusterDetachSelectedBtn" class="cluster-button danger" type="button" disabled>Personenzuordnung lösen (0)</button>
+              </div>
+            </div>
+            <div id="clusterEmptyOutliers" class="cluster-empty hidden">Bei diesem Radius liegen keine Gesichter außerhalb.</div>
+            <div id="clusterOutlierGrid" class="cluster-outlier-grid"></div>
+            <div class="cluster-load-more-wrap"><button id="clusterLoadMoreBtn" class="cluster-button subtle hidden" type="button">Weitere Ausreißer anzeigen</button></div>
+          </section>
+
+          <details class="cluster-panel cluster-centroid-details">
+            <summary>Durchschnittsvektoren anzeigen</summary>
+            <p>Der arithmetische Mittelwert liegt meist innerhalb der Einheitskugel. Für Abstände und den Mittelpunkt der Darstellung wird daraus die normierte Mittelrichtung μ gebildet.</p>
+            <label class="cluster-vector-label" for="clusterMeanVector">Arithmetischer Durchschnittsvektor</label>
+            <textarea id="clusterMeanVector" readonly spellcheck="false"></textarea>
+            <label class="cluster-vector-label" for="clusterCentroidVector">Normierte Mittelrichtung μ (Clusterzentrum)</label>
+            <textarea id="clusterCentroidVector" readonly spellcheck="false"></textarea>
+            <div class="cluster-detail-actions">
+              <button id="clusterCopyMeanBtn" class="cluster-button subtle" type="button">Durchschnitt kopieren</button>
+              <button id="clusterCopyCentroidBtn" class="cluster-button subtle" type="button">Mittelrichtung kopieren</button>
+              <button id="clusterExportBtn" class="cluster-button subtle" type="button">Cluster als JSON exportieren</button>
+            </div>
+          </details>
+        </div>
+      </section>
     </section>
   </main>
 

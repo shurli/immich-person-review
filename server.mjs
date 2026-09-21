@@ -2,6 +2,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Pool } from 'pg';
+import { buildVectorCluster } from './cluster-math.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
@@ -17,6 +19,42 @@ const UNNAMED_STATS_TTL_MS = 5 * 60 * 1000;
 const duplicateFaceScans = new Map();
 const DUPLICATE_SCAN_TTL_MS = 15 * 60 * 1000;
 
+const immichDbUrl = process.env.IMMICH_DB_URL || '';
+const immichDbHost = process.env.IMMICH_DB_HOST || process.env.DB_HOSTNAME || '';
+const immichDbPort = Number(process.env.IMMICH_DB_PORT || process.env.DB_PORT || 5432);
+const immichDbUser = process.env.IMMICH_DB_USER || process.env.DB_USERNAME || 'postgres';
+const immichDbPassword = process.env.IMMICH_DB_PASSWORD ?? process.env.DB_PASSWORD ?? '';
+const immichDbName = process.env.IMMICH_DB_NAME || process.env.DB_DATABASE_NAME || 'immich';
+const immichDbSsl = /^(1|true|yes|required)$/i.test(process.env.IMMICH_DB_SSL || '');
+const vectorDbConfigured = Boolean(immichDbUrl || immichDbHost);
+const vectorClusterMaxFacesValue = Number(process.env.VECTOR_CLUSTER_MAX_FACES || 30000);
+const vectorClusterMaxFaces = Number.isFinite(vectorClusterMaxFacesValue) ? Math.max(100, vectorClusterMaxFacesValue) : 30000;
+const vectorClusterDefaultRadiusRaw = process.env.VECTOR_CLUSTER_DEFAULT_RADIUS;
+const vectorClusterDefaultRadius = vectorClusterDefaultRadiusRaw == null || vectorClusterDefaultRadiusRaw === ''
+  ? undefined
+  : Number(vectorClusterDefaultRadiusRaw);
+const vectorPool = vectorDbConfigured
+  ? new Pool({
+      ...(immichDbUrl
+        ? { connectionString: immichDbUrl }
+        : {
+            host: immichDbHost,
+            port: Number.isFinite(immichDbPort) ? immichDbPort : 5432,
+            user: immichDbUser,
+            password: immichDbPassword,
+            database: immichDbName,
+          }),
+      ssl: immichDbSsl ? { rejectUnauthorized: false } : undefined,
+      application_name: 'immich-person-review-vector-cluster',
+      max: 3,
+      connectionTimeoutMillis: 8000,
+      idleTimeoutMillis: 30000,
+      statement_timeout: 60000,
+    })
+  : null;
+
+vectorPool?.on('error', (error) => console.error('Immich PostgreSQL pool error:', error));
+
 if (!immichUrl || !apiKey) {
   console.error('IMMICH_URL and IMMICH_API_KEY are required.');
   process.exit(1);
@@ -31,6 +69,231 @@ async function immichFetch(p, options = {}) {
   headers.set('x-api-key', apiKey);
   if (options.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
   return fetch(immichEndpoint(p), { ...options, headers, redirect: 'follow' });
+}
+
+async function vectorDatabaseInfo({ probe = false } = {}) {
+  const info = {
+    configured: vectorDbConfigured,
+    reachable: null,
+    host: immichDbUrl ? 'connection-string' : (immichDbHost || null),
+    port: immichDbUrl ? null : (Number.isFinite(immichDbPort) ? immichDbPort : 5432),
+    database: immichDbUrl ? null : immichDbName,
+    maxFaces: vectorClusterMaxFaces,
+  };
+  if (!probe || !vectorPool) return info;
+  try {
+    const result = await vectorPool.query(`SELECT current_database() AS database, current_user AS "user"`);
+    info.reachable = true;
+    info.database = result.rows[0]?.database || info.database;
+    info.user = result.rows[0]?.user || null;
+    try {
+      await vectorPool.query(
+        `SELECT af.id, af."assetId", af."personId", fs.embedding::text, a."originalFileName"
+           FROM asset_face af
+           LEFT JOIN face_search fs ON fs."faceId" = af.id
+           JOIN asset a ON a.id = af."assetId"
+          LIMIT 0`,
+      );
+      info.schemaReady = true;
+    } catch (schemaError) {
+      info.schemaReady = false;
+      info.schemaError = schemaError.message;
+    }
+  } catch (error) {
+    info.reachable = false;
+    info.schemaReady = false;
+    info.error = error.message;
+  }
+  return info;
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
+function requireVectorDatabase() {
+  if (!vectorPool) {
+    const error = new Error('PostgreSQL-Zugriff für Vektor-Cluster ist nicht konfiguriert. Setze IMMICH_DB_URL oder IMMICH_DB_HOST sowie die DB-Zugangsdaten.');
+    error.status = 503;
+    error.code = 'VECTOR_DB_NOT_CONFIGURED';
+    throw error;
+  }
+  return vectorPool;
+}
+
+async function verifyPersonAccess(personId) {
+  const response = await immichFetch(`/people/${encodeURIComponent(personId)}`);
+  if (!response.ok) {
+    const error = new Error(`Immich verweigert den Zugriff auf die Person (${response.status}).`);
+    error.response = response;
+    throw error;
+  }
+  return response.json();
+}
+
+async function loadPersonVectorRows(personId) {
+  const pool = requireVectorDatabase();
+  const countResult = await pool.query(
+    `SELECT count(*)::int AS count
+       FROM asset_face af
+       JOIN asset a ON a.id = af."assetId"
+      WHERE af."personId" = $1::uuid
+        AND af."deletedAt" IS NULL
+        AND af."isVisible" IS TRUE
+        AND a."deletedAt" IS NULL`,
+    [personId],
+  );
+  const totalAssignedFaces = Number(countResult.rows[0]?.count || 0);
+  if (totalAssignedFaces > vectorClusterMaxFaces) {
+    const error = new Error(`Diese Person hat ${totalAssignedFaces} Faces. Das konfigurierte Cluster-Limit liegt bei ${vectorClusterMaxFaces}. Erhöhe VECTOR_CLUSTER_MAX_FACES bewusst, wenn genügend Arbeitsspeicher vorhanden ist.`);
+    error.status = 413;
+    error.code = 'VECTOR_CLUSTER_TOO_LARGE';
+    throw error;
+  }
+
+  const result = await pool.query(
+    `SELECT
+        af.id AS "faceId",
+        af."assetId",
+        af."personId",
+        af."imageWidth",
+        af."imageHeight",
+        af."boundingBoxX1",
+        af."boundingBoxY1",
+        af."boundingBoxX2",
+        af."boundingBoxY2",
+        fs.embedding::text AS embedding,
+        a."originalFileName",
+        a."fileCreatedAt",
+        a."localDateTime",
+        a."createdAt"
+       FROM asset_face af
+       LEFT JOIN face_search fs ON fs."faceId" = af.id
+       JOIN asset a ON a.id = af."assetId"
+      WHERE af."personId" = $1::uuid
+        AND af."deletedAt" IS NULL
+        AND af."isVisible" IS TRUE
+        AND a."deletedAt" IS NULL
+      ORDER BY a."fileCreatedAt" ASC, af.id ASC`,
+    [personId],
+  );
+  return { rows: result.rows, totalAssignedFaces };
+}
+
+async function getPersonVectorCluster(personId) {
+  const person = await verifyPersonAccess(personId);
+  const { rows, totalAssignedFaces } = await loadPersonVectorRows(personId);
+  const cluster = buildVectorCluster(rows, {
+    seed: personId,
+    defaultRadius: Number.isFinite(vectorClusterDefaultRadius) ? vectorClusterDefaultRadius : undefined,
+  });
+  return {
+    person: { id: person.id, name: person.name || '' },
+    totalAssignedFaces,
+    facesWithEmbedding: cluster.points.length,
+    facesWithoutEmbedding: Math.max(0, totalAssignedFaces - cluster.points.length),
+    ...cluster,
+    presets: {
+      p90: cluster.stats.p90Distance,
+      p95: cluster.stats.p95Distance,
+      immichDefault: 0.5,
+    },
+  };
+}
+
+async function validateClusterFaceIds(personId, faceIds) {
+  const pool = requireVectorDatabase();
+  const unique = [...new Set((faceIds || []).map(String))];
+  if (!unique.length) return [];
+  const result = await pool.query(
+    `SELECT id, "assetId"
+       FROM asset_face
+      WHERE "personId" = $1::uuid
+        AND id = ANY($2::uuid[])
+        AND "deletedAt" IS NULL
+        AND "isVisible" IS TRUE`,
+    [personId, unique],
+  );
+  return result.rows.map((row) => ({ faceId: row.id, assetId: row.assetId }));
+}
+
+async function unassignFacesWithTemporaryPerson(items) {
+  if (!items.length) return { requested: 0, moved: 0, detached: 0, failed: 0, failures: [], detachedFaceIds: [] };
+  let temporaryPersonId = null;
+  const movedFaceIds = [];
+  const failures = [];
+  try {
+    const create = await immichFetch('/people', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: `__immich_review_cluster_unassign_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        birthDate: null,
+        isHidden: true,
+        isFavorite: false,
+      }),
+    });
+    if (!create.ok) {
+      const text = await create.text();
+      const error = new Error(`Temporäre Person konnte nicht erstellt werden: HTTP ${create.status} ${text.slice(0, 250)}`);
+      error.status = create.status;
+      throw error;
+    }
+    temporaryPersonId = (await create.json()).id;
+
+    let cursor = 0;
+    const workers = Array.from({ length: Math.min(4, items.length) }, async () => {
+      while (cursor < items.length) {
+        const item = items[cursor++];
+        try {
+          const move = await immichFetch(`/faces/${encodeURIComponent(temporaryPersonId)}`, {
+            method: 'PUT',
+            body: JSON.stringify({ id: item.faceId }),
+          });
+          if (!move.ok) {
+            const text = await move.text();
+            failures.push({ faceId: item.faceId, assetId: item.assetId, status: move.status, message: text.slice(0, 300) });
+          } else {
+            movedFaceIds.push(item.faceId);
+          }
+        } catch (error) {
+          failures.push({ faceId: item.faceId, assetId: item.assetId, status: 0, message: error.message });
+        }
+      }
+    });
+    await Promise.all(workers);
+
+    const removeTemporaryPerson = await immichFetch(`/people/${encodeURIComponent(temporaryPersonId)}`, { method: 'DELETE' });
+    if (!removeTemporaryPerson.ok) {
+      const text = await removeTemporaryPerson.text();
+      const error = new Error(`Temporäre Person konnte nicht gelöscht werden. ${movedFaceIds.length} Faces sind ihr weiterhin zugeordnet: HTTP ${removeTemporaryPerson.status} ${text.slice(0, 250)}`);
+      error.status = 502;
+      throw error;
+    }
+    temporaryPersonId = null;
+
+    let detachedFaceIds = movedFaceIds;
+    if (vectorPool && movedFaceIds.length) {
+      const verify = await vectorPool.query(
+        `SELECT id FROM asset_face WHERE id = ANY($1::uuid[]) AND "personId" IS NULL AND "deletedAt" IS NULL`,
+        [movedFaceIds],
+      );
+      detachedFaceIds = verify.rows.map((row) => row.id);
+    }
+
+    return {
+      requested: items.length,
+      moved: movedFaceIds.length,
+      detached: detachedFaceIds.length,
+      failed: failures.length + Math.max(0, movedFaceIds.length - detachedFaceIds.length),
+      failures: failures.slice(0, 100),
+      detachedFaceIds,
+    };
+  } catch (error) {
+    if (temporaryPersonId) {
+      try { await immichFetch(`/people/${encodeURIComponent(temporaryPersonId)}`, { method: 'DELETE' }); } catch {}
+    }
+    throw error;
+  }
 }
 
 function json(res, status, body) {
@@ -294,7 +557,7 @@ async function handleApi(req, res, url) {
       const r = await immichFetch('/api-keys/me');
       if (!r.ok) return proxyJson(res, r);
       const keyInfo = await r.json();
-      return json(res, 200, { ok: true, keyName: keyInfo.name || 'API key', immichUrl, version: appVersion });
+      return json(res, 200, { ok: true, keyName: keyInfo.name || 'API key', immichUrl, version: appVersion, vectorDatabase: await vectorDatabaseInfo({ probe: true }) });
     }
 
 
@@ -330,6 +593,53 @@ async function handleApi(req, res, url) {
       const q = url.searchParams.get('q') || '';
       if (!q.trim()) return json(res, 200, []);
       return proxyJson(res, await immichFetch(`/search/person?name=${encodeURIComponent(q)}&withHidden=true`));
+    }
+
+    const vectorClusterMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/vector-cluster$/i);
+    if (req.method === 'GET' && vectorClusterMatch) {
+      if (!isUuid(vectorClusterMatch[1])) return json(res, 400, { message: 'Ungültige Personen-ID' });
+      try {
+        return json(res, 200, await getPersonVectorCluster(vectorClusterMatch[1]));
+      } catch (error) {
+        if (error.response) return proxyJson(res, error.response);
+        if (error.status) return json(res, error.status, { message: error.message, code: error.code });
+        if (error.code && String(error.code).startsWith('42')) {
+          return json(res, 503, { message: `Immich-Datenbankschema oder Leseberechtigungen konnten nicht verwendet werden: ${error.message}`, code: 'VECTOR_DB_SCHEMA_ERROR' });
+        }
+        if (['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET', 'EHOSTUNREACH', 'SELF_SIGNED_CERT_IN_CHAIN', '28P01', '3D000'].includes(error.code)) {
+          return json(res, 503, { message: `PostgreSQL ist für den Vektor-Cluster nicht erreichbar: ${error.message}`, code: 'VECTOR_DB_CONNECTION_ERROR' });
+        }
+        throw error;
+      }
+    }
+
+    const vectorClusterUnassignMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/vector-cluster\/unassign$/i);
+    if (req.method === 'POST' && vectorClusterUnassignMatch) {
+      const personId = vectorClusterUnassignMatch[1];
+      if (!isUuid(personId)) return json(res, 400, { message: 'Ungültige Personen-ID' });
+      const body = await parseBody(req);
+      if (!Array.isArray(body.faceIds) || !body.faceIds.length) return json(res, 400, { message: 'faceIds must be a non-empty array' });
+      if (body.faceIds.length > 5000) return json(res, 413, { message: 'Maximal 5000 Face-Zuordnungen pro Batch' });
+      if (body.faceIds.some((faceId) => !isUuid(faceId))) return json(res, 400, { message: 'Mindestens eine Face-ID ist ungültig.' });
+      try {
+        await verifyPersonAccess(personId);
+        const validated = await validateClusterFaceIds(personId, body.faceIds);
+        const requestedUnique = new Set(body.faceIds.map(String));
+        if (!validated.length) return json(res, 409, { message: 'Keines der ausgewählten Faces ist dieser Person noch zugeordnet.' });
+        const result = await unassignFacesWithTemporaryPerson(validated);
+        return json(res, 200, {
+          ...result,
+          ok: result.failed === 0 && validated.length === requestedUnique.size,
+          requested: requestedUnique.size,
+          processed: result.requested,
+          validated: validated.length,
+          skipped: Math.max(0, requestedUnique.size - validated.length),
+        });
+      } catch (error) {
+        if (error.response) return proxyJson(res, error.response);
+        if (error.status) return json(res, error.status, { message: error.message, code: error.code });
+        throw error;
+      }
     }
 
     const personMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)$/i);
@@ -574,4 +884,14 @@ http.createServer((req, res) => {
   console.log(`Immich Person Review v${appVersion}`);
   console.log(`Listening on :${port}`);
   console.log(`Immich endpoint: ${immichUrl}${apiPrefix}`);
+  console.log(`Vector database: ${vectorDbConfigured ? 'configured' : 'not configured'}`);
 });
+
+async function shutdown(signal) {
+  console.log(`${signal}: shutting down`);
+  try { await vectorPool?.end(); } catch (error) { console.error('Could not close PostgreSQL pool:', error); }
+  process.exit(0);
+}
+
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));

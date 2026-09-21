@@ -1,7 +1,17 @@
 FROM node:22-alpine
+
 WORKDIR /app
-COPY package.json server.mjs ./
-COPY public ./public
-ENV NODE_ENV=production PORT=3000
+
+COPY package.json ./
+RUN npm install --omit=dev --no-audit --no-fund --ignore-scripts
+
+COPY --chown=node:node server.mjs cluster-math.mjs ./
+COPY --chown=node:node public ./public
+
+ENV NODE_ENV=production \
+    PORT=3000
+
+USER node
 EXPOSE 3000
+
 CMD ["node", "server.mjs"]

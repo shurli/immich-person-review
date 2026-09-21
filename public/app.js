@@ -16,11 +16,23 @@ const state = {
   mergeSource: null,
   immichUrl: '',
   duplicateFaceScanId: null,
+  vectorDatabase: { configured: false },
+  activePersonView: 'timeline',
+  cluster: null,
+  clusterRadius: 0,
+  clusterSelected: new Set(),
+  clusterVisibleCount: 80,
+  clusterLoadedFor: null,
+  clusterLoading: false,
+  clusterPlotPoints: [],
+  clusterImageCache: new Map(),
+  timelineStale: false,
 };
 
 let faceObserver;
 let pageObserver;
 let unnamedStatsObserver;
+let clusterResizeObserver;
 
 async function api(url, options = {}) {
   const r = await fetch(url, {
@@ -91,6 +103,26 @@ async function init() {
     const s = await api('/review-api/status');
     $('#appVersion').textContent = s.version ? `v${s.version}` : 'v?';
     state.immichUrl = String(s.immichUrl || '').replace(/\/$/, '');
+    state.vectorDatabase = s.vectorDatabase || { configured: false };
+    const clusterBadge = $('#clusterDbBadge');
+    const databaseReady = state.vectorDatabase.configured
+      && state.vectorDatabase.reachable !== false
+      && state.vectorDatabase.schemaReady !== false;
+    clusterBadge.textContent = !state.vectorDatabase.configured
+      ? 'DB fehlt'
+      : state.vectorDatabase.reachable === false
+        ? 'DB-Fehler'
+        : state.vectorDatabase.schemaReady === false
+          ? 'DB-Rechte'
+          : 'DB bereit';
+    clusterBadge.classList.toggle('offline', !databaseReady);
+    clusterBadge.title = !state.vectorDatabase.configured
+      ? 'Für Vektor-Cluster fehlen die PostgreSQL-Zugangsdaten.'
+      : state.vectorDatabase.reachable === false
+        ? `PostgreSQL nicht erreichbar: ${state.vectorDatabase.error || 'unbekannter Fehler'}`
+        : state.vectorDatabase.schemaReady === false
+          ? `Tabellen oder SELECT-Rechte fehlen: ${state.vectorDatabase.schemaError || 'unbekannter Fehler'}`
+          : `PostgreSQL erreichbar${state.vectorDatabase.database ? ` · DB ${state.vectorDatabase.database}` : ''}${state.vectorDatabase.user ? ` · Benutzer ${state.vectorDatabase.user}` : ''}`;
     $('#status').textContent = `Verbunden · ${s.keyName}`;
     $('#status').className = 'status ok';
   } catch (e) {
@@ -346,6 +378,9 @@ async function selectPerson(id) {
   $('#chooser').classList.add('hidden');
   $('#review').classList.remove('hidden');
   resetReviewState();
+  resetClusterState();
+  state.timelineStale = false;
+  setPersonView('timeline', { load: false });
   $('#timeline').innerHTML = '<div class="panel loading initial-loading">Erste Assets werden geladen…</div>';
 
   try {
@@ -368,7 +403,8 @@ async function selectPerson(id) {
 function updateBatchButton() {
   const button = $('#batchBeforeBirthBtn');
   const hasBirthDate = Boolean(state.person?.birthDate);
-  button.classList.toggle('hidden', !hasBirthDate);
+  const show = hasBirthDate && state.activePersonView === 'timeline';
+  button.classList.toggle('hidden', !show);
   button.disabled = !hasBirthDate;
   if (!button.dataset.running) button.textContent = 'Alle „vor Geburt“ Zuordnungen lösen';
 }
@@ -491,15 +527,21 @@ async function loadFaceForCard(card, asset) {
 }
 
 function cropRect(face) {
-  const fw = face.boundingBoxX2 - face.boundingBoxX1;
-  const fh = face.boundingBoxY2 - face.boundingBoxY1;
+  const imageWidth = Math.max(1, Number(face.imageWidth) || 1);
+  const imageHeight = Math.max(1, Number(face.imageHeight) || 1);
+  const x1 = Number(face.boundingBoxX1) || 0;
+  const y1 = Number(face.boundingBoxY1) || 0;
+  const x2 = Number(face.boundingBoxX2) || x1 + 1;
+  const y2 = Number(face.boundingBoxY2) || y1 + 1;
+  const fw = Math.max(1, x2 - x1);
+  const fh = Math.max(1, y2 - y1);
   const side = Math.max(fw, fh) * 1.75;
-  const cx = (face.boundingBoxX1 + face.boundingBoxX2) / 2;
-  const cy = (face.boundingBoxY1 + face.boundingBoxY2) / 2;
-  const x = Math.max(0, cx - side / 2);
-  const y = Math.max(0, cy - side / 2);
-  const w = Math.min(side, face.imageWidth - x);
-  const h = Math.min(side, face.imageHeight - y);
+  const cx = (x1 + x2) / 2;
+  const cy = (y1 + y2) / 2;
+  const x = Math.max(0, Math.min(imageWidth - 1, cx - side / 2));
+  const y = Math.max(0, Math.min(imageHeight - 1, cy - side / 2));
+  const w = Math.max(1, Math.min(side, imageWidth - x));
+  const h = Math.max(1, Math.min(side, imageHeight - y));
   return { x, y, w, h };
 }
 
@@ -656,6 +698,505 @@ async function removeFace(card, face, asset, { confirmDelete = true } = {}) {
   }
 }
 
+
+let clusterOutlierRenderTimer;
+
+function resetClusterState() {
+  state.cluster = null;
+  state.clusterRadius = 0;
+  state.clusterSelected.clear();
+  state.clusterVisibleCount = 80;
+  state.clusterLoadedFor = null;
+  state.clusterLoading = false;
+  state.clusterPlotPoints = [];
+  state.clusterImageCache.clear();
+  clearTimeout(clusterOutlierRenderTimer);
+  clusterResizeObserver?.disconnect();
+  $('#clusterLoading')?.classList.remove('hidden');
+  $('#clusterError')?.classList.add('hidden');
+  $('#clusterDashboard')?.classList.add('hidden');
+  if ($('#clusterOutlierGrid')) $('#clusterOutlierGrid').innerHTML = '';
+}
+
+function setPersonView(view, { load = true } = {}) {
+  const cluster = view === 'cluster';
+  state.activePersonView = cluster ? 'cluster' : 'timeline';
+  $('#timelineViewBtn').classList.toggle('active', !cluster);
+  $('#timelineViewBtn').setAttribute('aria-selected', String(!cluster));
+  $('#clusterViewBtn').classList.toggle('active', cluster);
+  $('#clusterViewBtn').setAttribute('aria-selected', String(cluster));
+  $('#timelineView').classList.toggle('hidden', cluster);
+  $('#clusterView').classList.toggle('hidden', !cluster);
+  document.querySelector('.review-head .toggle')?.classList.toggle('hidden', cluster);
+  updateBatchButton();
+
+  if (cluster && load) {
+    loadVectorCluster();
+    requestAnimationFrame(drawVectorCluster);
+  } else if (!cluster && state.timelineStale && state.person) {
+    reloadTimelineView();
+  }
+}
+
+async function reloadTimelineView() {
+  if (!state.person) return;
+  state.timelineStale = false;
+  resetReviewState();
+  $('#timeline').innerHTML = '<div class="panel loading initial-loading">Assets werden nach den Änderungen neu geladen…</div>';
+  initObservers();
+  await loadNextPage();
+}
+
+function clusterSetupMessage() {
+  return `Für die Vektoransicht braucht die App zusätzlich einen lesenden PostgreSQL-Zugriff auf die Immich-Datenbank.\n\nBeispiel für .env:\nIMMICH_DB_HOST=database\nIMMICH_DB_PORT=5432\nIMMICH_DB_USER=postgres\nIMMICH_DB_PASSWORD=…\nIMMICH_DB_NAME=immich\n\nDer App-Container muss außerdem im selben Docker-Netz wie Immich/PostgreSQL liegen.`;
+}
+
+function showClusterError(message) {
+  $('#clusterLoading').classList.add('hidden');
+  $('#clusterDashboard').classList.add('hidden');
+  const error = $('#clusterError');
+  error.textContent = message;
+  error.classList.remove('hidden');
+}
+
+async function loadVectorCluster({ force = false } = {}) {
+  if (!state.person || state.clusterLoading) return;
+  if (!force && state.cluster && state.clusterLoadedFor === state.person.id) {
+    renderVectorCluster({ resetRadius: false });
+    return;
+  }
+  if (!state.vectorDatabase.configured) {
+    showClusterError(clusterSetupMessage());
+    return;
+  }
+
+  const preserveRadius = Boolean(state.cluster && state.clusterLoadedFor === state.person.id);
+  state.clusterLoading = true;
+  $('#clusterLoading').classList.remove('hidden');
+  $('#clusterError').classList.add('hidden');
+  $('#clusterDashboard').classList.add('hidden');
+  try {
+    const data = await api(`/review-api/people/${state.person.id}/vector-cluster`);
+    state.cluster = data;
+    state.clusterLoadedFor = state.person.id;
+    state.clusterSelected.clear();
+    state.clusterVisibleCount = 80;
+    state.clusterImageCache.clear();
+    renderVectorCluster({ resetRadius: !preserveRadius });
+  } catch (error) {
+    showClusterError(error.message);
+  } finally {
+    state.clusterLoading = false;
+    $('#clusterLoading').classList.add('hidden');
+  }
+}
+
+function formatClusterDistance(value, digits = 3) {
+  return Number(value || 0).toLocaleString('de-AT', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function formatClusterDate(value) {
+  if (!value) return 'Datum unbekannt';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return fmtDate(date);
+}
+
+function renderVectorCluster({ resetRadius = true } = {}) {
+  const data = state.cluster;
+  if (!data) return;
+  if (!data.points?.length) {
+    showClusterError(data.totalAssignedFaces
+      ? `Für diese Person wurden bei ${data.totalAssignedFaces} zugeordneten Faces keine lesbaren Embeddings gefunden.`
+      : 'Dieser Person sind derzeit keine Faces zugeordnet.');
+    return;
+  }
+  $('#clusterError').classList.add('hidden');
+  $('#clusterDashboard').classList.remove('hidden');
+  $('#clusterFaceCount').textContent = data.facesWithEmbedding;
+  $('#clusterMissingCount').textContent = `${data.facesWithoutEmbedding} ohne Embedding`;
+  $('#clusterCentroidMeta').textContent = `${data.dimensions}D · Konzentration R ${formatClusterDistance(data.meanVectorNorm, 3)}`;
+  $('#clusterMeanDistance').textContent = formatClusterDistance(data.stats.meanDistance);
+  $('#clusterMaxDistance').textContent = formatClusterDistance(data.stats.maxDistance);
+  const furthest = [...data.points].sort((a, b) => b.distance - a.distance)[0];
+  $('#clusterMaxDistanceMeta').textContent = furthest?.originalFileName || 'entferntestes Gesicht';
+  $('#clusterMeanVector').value = `[${(data.meanVector || []).join(', ')}]`;
+  $('#clusterCentroidVector').value = `[${(data.centroid || []).join(', ')}]`;
+
+  const maxControlValue = Math.min(2, Math.max(0.5, Number(data.stats.maxDistance || 0) * 1.08, Number(data.defaultRadius || 0) * 1.08));
+  $('#clusterRadiusRange').max = String(maxControlValue);
+  $('#clusterRadiusInput').max = String(maxControlValue);
+  const initial = Number.isFinite(Number(data.defaultRadius)) ? Number(data.defaultRadius) : Number(data.stats.p90Distance || 0);
+  if (resetRadius || !Number.isFinite(state.clusterRadius)) {
+    state.clusterRadius = Math.min(maxControlValue, Math.max(0, initial));
+  } else {
+    state.clusterRadius = Math.min(maxControlValue, Math.max(0, state.clusterRadius));
+  }
+  $('#clusterPresetP90').textContent = `P90 · ${formatClusterDistance(data.presets?.p90)}`;
+  $('#clusterPresetP95').textContent = `P95 · ${formatClusterDistance(data.presets?.p95)}`;
+
+  clusterResizeObserver?.disconnect();
+  if ('ResizeObserver' in window) {
+    clusterResizeObserver = new ResizeObserver(() => drawVectorCluster());
+    clusterResizeObserver.observe($('#clusterCanvasWrap'));
+  }
+  updateClusterThreshold({ renderCards: true });
+}
+
+function getClusterOutliers() {
+  if (!state.cluster) return [];
+  return state.cluster.points
+    .filter((point) => Number(point.distance) > state.clusterRadius)
+    .sort((a, b) => Number(b.distance) - Number(a.distance));
+}
+
+function setClusterRadius(value, { renderCards = true } = {}) {
+  const max = Number($('#clusterRadiusRange').max || 2);
+  const numeric = Number(String(value).trim().replace(',', '.'));
+  if (!Number.isFinite(numeric)) return;
+  state.clusterRadius = Math.min(max, Math.max(0, numeric));
+  updateClusterThreshold({ renderCards });
+}
+
+function updateClusterThreshold({ renderCards = true } = {}) {
+  if (!state.cluster) return;
+  $('#clusterRadiusRange').value = String(state.clusterRadius);
+  $('#clusterRadiusInput').value = state.clusterRadius.toFixed(3);
+  const outliers = getClusterOutliers();
+  const outlierIds = new Set(outliers.map((point) => point.faceId));
+  for (const faceId of [...state.clusterSelected]) {
+    if (!outlierIds.has(faceId)) state.clusterSelected.delete(faceId);
+  }
+  $('#clusterOutsideCount').textContent = outliers.length;
+  $('#clusterInsideCount').textContent = Math.max(0, state.cluster.points.length - outliers.length);
+  $('#clusterOutlierSummary').textContent = `${outliers.length} Face${outliers.length === 1 ? '' : 's'} mit Distanz > ${formatClusterDistance(state.clusterRadius)} · größte Distanz zuerst.`;
+  updateClusterSelectionControls();
+  drawVectorCluster();
+
+  if (renderCards) {
+    clearTimeout(clusterOutlierRenderTimer);
+    renderClusterOutliers();
+  } else {
+    clearTimeout(clusterOutlierRenderTimer);
+    clusterOutlierRenderTimer = setTimeout(renderClusterOutliers, 90);
+  }
+}
+
+function updateClusterSelectionControls() {
+  const count = state.clusterSelected.size;
+  $('#clusterSelectedCount').textContent = count;
+  const button = $('#clusterDetachSelectedBtn');
+  button.disabled = count === 0;
+  button.textContent = `Personenzuordnung lösen (${count})`;
+  document.querySelectorAll('.cluster-outlier-card').forEach((card) => {
+    const selected = state.clusterSelected.has(card.dataset.faceId);
+    card.classList.toggle('selected', selected);
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = selected;
+  });
+}
+
+function toggleClusterSelection(faceId, selected = !state.clusterSelected.has(faceId)) {
+  if (selected) state.clusterSelected.add(faceId);
+  else state.clusterSelected.delete(faceId);
+  updateClusterSelectionControls();
+  drawVectorCluster();
+}
+
+function renderClusterOutliers() {
+  const outliers = getClusterOutliers();
+  const shown = outliers.slice(0, state.clusterVisibleCount);
+  $('#clusterEmptyOutliers').classList.toggle('hidden', outliers.length !== 0);
+  const grid = $('#clusterOutlierGrid');
+  grid.innerHTML = shown.map((point) => {
+    const date = point.localDateTime || point.fileCreatedAt || point.createdAt;
+    const width = Math.max(0, Number(point.boundingBoxX2) - Number(point.boundingBoxX1));
+    const height = Math.max(0, Number(point.boundingBoxY2) - Number(point.boundingBoxY1));
+    const selected = state.clusterSelected.has(point.faceId);
+    return `<article class="cluster-outlier-card${selected ? ' selected' : ''}" data-face-id="${esc(point.faceId)}" title="Zum Markieren anklicken">
+      <input type="checkbox" aria-label="Face markieren" ${selected ? 'checked' : ''}>
+      <canvas width="320" height="320"></canvas>
+      <div class="cluster-card-body">
+        <div class="cluster-distance">${formatClusterDistance(point.distance)}</div>
+        <div class="cluster-file">${esc(point.originalFileName || point.assetId)}</div>
+        <div class="cluster-date">${esc(formatClusterDate(date))}</div>
+        <div class="cluster-face-size">Face ${width} × ${height} px</div>
+      </div>
+    </article>`;
+  }).join('');
+
+  for (const card of grid.querySelectorAll('.cluster-outlier-card')) {
+    const faceId = card.dataset.faceId;
+    const point = shown.find((item) => item.faceId === faceId);
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    checkbox.addEventListener('click', (event) => event.stopPropagation());
+    checkbox.addEventListener('change', () => toggleClusterSelection(faceId, checkbox.checked));
+    card.addEventListener('click', () => toggleClusterSelection(faceId));
+    paintClusterFaceCrop(card.querySelector('canvas'), point);
+  }
+
+  const loadMore = $('#clusterLoadMoreBtn');
+  loadMore.classList.toggle('hidden', shown.length >= outliers.length);
+  if (shown.length < outliers.length) loadMore.textContent = `Weitere anzeigen (${outliers.length - shown.length})`;
+  updateClusterSelectionControls();
+}
+
+function loadClusterAssetImage(assetId) {
+  if (!state.clusterImageCache.has(assetId)) {
+    state.clusterImageCache.set(assetId, new Promise((resolve, reject) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('Thumbnail konnte nicht geladen werden'));
+      image.src = thumbAsset(assetId);
+    }));
+  }
+  return state.clusterImageCache.get(assetId);
+}
+
+async function paintClusterFaceCrop(canvas, point) {
+  if (!canvas || !point) return;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#07131f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  try {
+    const image = await loadClusterAssetImage(point.assetId);
+    if (!canvas.isConnected) return;
+    const rect = cropRect(point);
+    const scaleX = image.naturalWidth / Math.max(1, Number(point.imageWidth));
+    const scaleY = image.naturalHeight / Math.max(1, Number(point.imageHeight));
+    ctx.fillStyle = '#07131f';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(
+      image,
+      rect.x * scaleX,
+      rect.y * scaleY,
+      rect.w * scaleX,
+      rect.h * scaleY,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+  } catch {
+    ctx.fillStyle = '#8fa5bc';
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Kein Thumbnail', canvas.width / 2, canvas.height / 2);
+  }
+}
+
+function prepareClusterCanvas() {
+  const canvas = $('#clusterCanvas');
+  const width = Math.max(320, Math.floor(canvas.clientWidth || 0));
+  const height = Math.max(320, Math.floor(canvas.clientHeight || 0));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const pixelWidth = Math.floor(width * dpr);
+  const pixelHeight = Math.floor(height * dpr);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { canvas, ctx, width, height };
+}
+
+function drawVectorCluster() {
+  if (!state.cluster || $('#clusterView').classList.contains('hidden')) return;
+  const { ctx, width, height } = prepareClusterCanvas();
+  ctx.clearRect(0, 0, width, height);
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const maxDistance = Math.max(0.01, Number(state.cluster.stats.maxDistance || 0), state.clusterRadius);
+  const plotRadius = Math.max(80, Math.min(width, height) * 0.42);
+  const scale = plotRadius / maxDistance;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(150,180,210,.12)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    const radius = plotRadius * (i / 4);
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(centerX - plotRadius, centerY);
+  ctx.lineTo(centerX + plotRadius, centerY);
+  ctx.moveTo(centerX, centerY - plotRadius);
+  ctx.lineTo(centerX, centerY + plotRadius);
+  ctx.stroke();
+
+  const thresholdPixels = state.clusterRadius * scale;
+  ctx.strokeStyle = '#68a4ff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, thresholdPixels, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#9fc5ff';
+  ctx.font = '12px system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Radius ${formatClusterDistance(state.clusterRadius)}`, Math.min(width - 130, centerX + thresholdPixels + 8), centerY - 7);
+
+  const plotted = state.cluster.points.map((point) => ({
+    point,
+    outside: Number(point.distance) > state.clusterRadius,
+    px: centerX + Number(point.x) * scale,
+    py: centerY - Number(point.y) * scale,
+  })).sort((a, b) => Number(a.outside) - Number(b.outside));
+
+  for (const item of plotted) {
+    const selected = state.clusterSelected.has(item.point.faceId);
+    const radius = selected ? 7 : item.outside ? 5 : 3.6;
+    ctx.beginPath();
+    ctx.arc(item.px, item.py, radius, 0, Math.PI * 2);
+    ctx.fillStyle = selected ? '#69a9ff' : item.outside ? '#ff6b3d' : '#76c96b';
+    ctx.globalAlpha = item.outside || selected ? 1 : 0.84;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    if (selected) {
+      ctx.strokeStyle = '#f7fbff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  ctx.strokeStyle = '#78adff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(centerX - 8, centerY - 8);
+  ctx.lineTo(centerX + 8, centerY + 8);
+  ctx.moveTo(centerX + 8, centerY - 8);
+  ctx.lineTo(centerX - 8, centerY + 8);
+  ctx.stroke();
+  ctx.fillStyle = '#b8d5ff';
+  ctx.font = '12px system-ui';
+  ctx.fillText('μ', centerX + 11, centerY - 10);
+  ctx.restore();
+
+  state.clusterPlotPoints = plotted;
+}
+
+function nearestClusterPlotPoint(event) {
+  const canvas = $('#clusterCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  let nearest = null;
+  let nearestDistance = Infinity;
+  for (const item of state.clusterPlotPoints) {
+    const distance = Math.hypot(item.px - x, item.py - y);
+    if (distance < nearestDistance) {
+      nearest = item;
+      nearestDistance = distance;
+    }
+  }
+  return nearestDistance <= 12 ? { item: nearest, x, y } : null;
+}
+
+function showClusterTooltip(event) {
+  const hit = nearestClusterPlotPoint(event);
+  const tooltip = $('#clusterTooltip');
+  if (!hit) {
+    tooltip.classList.add('hidden');
+    return;
+  }
+  const point = hit.item.point;
+  const date = point.localDateTime || point.fileCreatedAt || point.createdAt;
+  tooltip.innerHTML = `<strong>${esc(point.originalFileName || point.assetId)}</strong><span class="distance">Distanz ${formatClusterDistance(point.distance)}</span><br>${esc(formatClusterDate(date))}${hit.item.outside ? '<br>außerhalb des Radius' : ''}`;
+  const wrap = $('#clusterCanvasWrap');
+  tooltip.style.left = `${Math.max(0, Math.min(hit.x, wrap.clientWidth - 270))}px`;
+  tooltip.style.top = `${Math.max(0, Math.min(hit.y, wrap.clientHeight - 100))}px`;
+  tooltip.classList.remove('hidden');
+}
+
+function selectClusterPointFromCanvas(event) {
+  const hit = nearestClusterPlotPoint(event);
+  if (!hit || !hit.item.outside) return;
+  const point = hit.item.point;
+  toggleClusterSelection(point.faceId);
+  const outliers = getClusterOutliers();
+  const index = outliers.findIndex((item) => item.faceId === point.faceId);
+  if (index >= state.clusterVisibleCount) {
+    state.clusterVisibleCount = Math.ceil((index + 1) / 80) * 80;
+    renderClusterOutliers();
+  }
+  requestAnimationFrame(() => document.querySelector(`[data-face-id="${point.faceId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+}
+
+async function detachSelectedClusterFaces() {
+  if (!state.person || !state.clusterSelected.size) return;
+  const faceIds = [...state.clusterSelected];
+  const count = faceIds.length;
+  if (!window.confirm(`${count} ausgewählte Face-Zuordnung${count === 1 ? '' : 'en'} zu ${state.person.name || 'dieser Person'} lösen?\n\nDie Face-Markierungen und Embeddings bleiben erhalten; nur die Personenzuordnung wird entfernt.`)) return;
+  const button = $('#clusterDetachSelectedBtn');
+  const previous = button.textContent;
+  button.disabled = true;
+  button.textContent = `Löse ${count} Zuordnungen…`;
+  try {
+    const result = await api(`/review-api/people/${state.person.id}/vector-cluster/unassign`, {
+      method: 'POST',
+      body: JSON.stringify({ faceIds }),
+    });
+    state.timelineStale = true;
+    toast(`${result.detached || 0} Zuordnung${result.detached === 1 ? '' : 'en'} gelöst${result.skipped ? ` · ${result.skipped} übersprungen` : ''}${result.failed ? ` · ${result.failed} Fehler` : ''}`);
+    await loadVectorCluster({ force: true });
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.textContent = previous;
+    updateClusterSelectionControls();
+  }
+}
+
+async function copyClusterVector(selector, successMessage) {
+  const textarea = $(selector);
+  const value = textarea.value;
+  try {
+    await navigator.clipboard.writeText(value);
+    toast(successMessage);
+  } catch {
+    textarea.focus();
+    textarea.select();
+    document.execCommand('copy');
+    toast(successMessage);
+  }
+}
+
+function copyClusterMean() {
+  return copyClusterVector('#clusterMeanVector', 'Durchschnittsvektor kopiert');
+}
+
+function copyClusterCentroid() {
+  return copyClusterVector('#clusterCentroidVector', 'Normierte Mittelrichtung kopiert');
+}
+
+function exportVectorCluster() {
+  if (!state.cluster || !state.person) return;
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    person: { id: state.person.id, name: state.person.name || '' },
+    dimensions: state.cluster.dimensions,
+    projection: state.cluster.projection,
+    radius: state.clusterRadius,
+    meanVector: state.cluster.meanVector,
+    meanVectorNorm: state.cluster.meanVectorNorm,
+    centroid: state.cluster.centroid,
+    stats: state.cluster.stats,
+    points: state.cluster.points,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `immich-vector-cluster-${state.person.id}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 async function collectBeforeBirthAssets() {
   const birthDate = state.person?.birthDate;
   if (!birthDate) return [];
@@ -744,11 +1285,46 @@ $('#createPersonBtn').onclick = async () => {
   }
 };
 
+$('#timelineViewBtn').onclick = () => setPersonView('timeline');
+$('#clusterViewBtn').onclick = () => setPersonView('cluster');
+$('#clusterReloadBtn').onclick = () => loadVectorCluster({ force: true });
+$('#clusterRadiusRange').addEventListener('input', (event) => setClusterRadius(event.target.value, { renderCards: false }));
+$('#clusterRadiusInput').addEventListener('change', (event) => setClusterRadius(event.target.value));
+$('#clusterRadiusInput').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') setClusterRadius(event.currentTarget.value);
+});
+$('#clusterPresetP90').onclick = () => state.cluster && setClusterRadius(state.cluster.presets?.p90 ?? state.cluster.stats.p90Distance);
+$('#clusterPresetP95').onclick = () => state.cluster && setClusterRadius(state.cluster.presets?.p95 ?? state.cluster.stats.p95Distance);
+$('#clusterPresetImmich').onclick = () => setClusterRadius(0.5);
+$('#clusterSelectAllBtn').onclick = () => {
+  for (const point of getClusterOutliers()) state.clusterSelected.add(point.faceId);
+  updateClusterSelectionControls();
+  drawVectorCluster();
+};
+$('#clusterClearSelectionBtn').onclick = () => {
+  state.clusterSelected.clear();
+  updateClusterSelectionControls();
+  drawVectorCluster();
+};
+$('#clusterDetachSelectedBtn').onclick = detachSelectedClusterFaces;
+$('#clusterLoadMoreBtn').onclick = () => {
+  state.clusterVisibleCount += 80;
+  renderClusterOutliers();
+};
+$('#clusterCopyMeanBtn').onclick = copyClusterMean;
+$('#clusterCopyCentroidBtn').onclick = copyClusterCentroid;
+$('#clusterExportBtn').onclick = exportVectorCluster;
+$('#clusterCanvas').addEventListener('pointermove', showClusterTooltip);
+$('#clusterCanvas').addEventListener('pointerleave', () => $('#clusterTooltip').classList.add('hidden'));
+$('#clusterCanvas').addEventListener('click', selectClusterPointFromCanvas);
+
 $('#batchBeforeBirthBtn').onclick = () => runBatchBeforeBirth();
 $('#loadMoreBtn').onclick = () => loadNextPage();
 $('#closeDialog').onclick = () => $('#reassignDialog').close();
 $('#backBtn').onclick = () => {
   resetReviewState();
+  resetClusterState();
+  clusterResizeObserver?.disconnect();
   $('#review').classList.add('hidden');
   $('#chooser').classList.remove('hidden');
   state.person = null;
