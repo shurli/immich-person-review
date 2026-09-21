@@ -49,7 +49,7 @@ cp .env.example .env
 nano .env
 ```
 
-2. `IMMICH_URL` in `docker-compose.yml` anpassen. Wenn der Review-Container im selben Docker-Netz wie Immich läuft, ist meist z. B. `http://immich-server:2283` passend. Für eine externe URL z. B. `https://photos.example.com`.
+2. `IMMICH_URL` und `IMMICH_API_KEY` in `.env` setzen. `docker-compose.yml` übernimmt beide Werte über `env_file` direkt aus `.env`.
 
 3. Starten:
 
@@ -103,5 +103,15 @@ Der Browser kennt den Immich API-Key nicht. Bilder werden ebenfalls über den Re
 - Gesichter werden per `GET /faces?id=<asset-id>` geladen.
 - Die Korrektur folgt dem aktuellen Immich-Endpunkt `PUT /faces/{personId}` mit `{ id: faceId }`: die Zielperson steht im Pfad, das umzuhängende Face im Body.
 - Bei sehr großen Personen-Clustern werden die Assets serverseitig seitenweise geladen; Face-Daten werden nur in der Nähe des Viewports geladen.
-- „Markierung entfernen“ löscht das Face-Objekt über die offizielle Immich-API. Die aktuelle stabile API bietet keinen separaten Endpunkt, um nur `personId` auf `null` zu setzen.
+- „Markierung entfernen“ löscht das Face-Objekt über die offizielle Immich-API.
+- „Zuordnung lösen“ behält das Face bei und entfernt nur die Personenzuordnung. Weil Immich aktuell keinen direkten Public-API-Endpunkt für `personId = null` anbietet, verwendet die App ausschließlich offizielle API-Aufrufe: temporäre versteckte Person anlegen, Face dorthin umhängen, temporäre Person löschen und anschließend verifizieren, dass dasselbe Face mit `person: null` erhalten blieb.
 - Der „vor Geburt“-Batch nutzt `takenBefore` in `POST /search/metadata`, sammelt zuerst alle Assets und beginnt erst danach mit dem Löschen. Dadurch verschiebt die laufende Mutation nicht die Such-Pagination.
+
+
+## v0.4.0
+
+- Sticky-Header korrigiert: kein sichtbarer Spalt mehr zwischen Hauptkopf und Personenleiste; Karten haben einen Scroll-Abstand.
+- Neuer Button **Zuordnung lösen** ohne Sicherheitsabfrage. Nach Erfolg scrollt die Ansicht automatisch zum nächsten Foto.
+- Der Face-Datensatz bleibt bestehen, nur die Personenzuordnung wird gelöst. Dafür braucht der API-Key zusätzlich `person.create`, `face.update` und `person.delete`.
+- Leere `204 No Content`-Antworten werden sauber behandelt; dadurch gibt es beim **Markierung entfernen** keinen JSON-Parse-Fehler mehr.
+- `docker-compose.yml` liest `IMMICH_URL` und `IMMICH_API_KEY` direkt aus `.env`.

@@ -46,6 +46,10 @@ async function parseBody(req) {
 
 async function proxyJson(res, response) {
   const text = await response.text();
+  if (response.status === 204 || !text) {
+    res.writeHead(response.status, { 'cache-control': 'no-store' });
+    return res.end();
+  }
   res.writeHead(response.status, {
     'content-type': response.headers.get('content-type') || 'application/json; charset=utf-8',
     'cache-control': 'no-store',
@@ -161,6 +165,59 @@ async function handleApi(req, res, url) {
         method: 'PUT',
         body: JSON.stringify({ id: reassignMatch[1] }),
       }));
+    }
+
+    const unassignFaceMatch = url.pathname.match(/^\/review-api\/faces\/([0-9a-f-]+)\/unassign$/i);
+    if (req.method === 'POST' && unassignFaceMatch) {
+      const faceId = unassignFaceMatch[1];
+      const body = await parseBody(req);
+      if (!body.assetId) return json(res, 400, { message: 'assetId is required' });
+
+      // Immich currently has no public endpoint that directly sets one face's person to null.
+      // API-only workaround: move the face to a temporary hidden person, then delete that person.
+      // Immich keeps the face record and clears its person relationship when the person is deleted.
+      let temporaryPersonId = null;
+      try {
+        const create = await immichFetch('/people', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: `__immich_review_unassign_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+            birthDate: null,
+            isHidden: true,
+            isFavorite: false,
+          }),
+        });
+        if (!create.ok) return proxyJson(res, create);
+        const temporaryPerson = await create.json();
+        temporaryPersonId = temporaryPerson.id;
+
+        const move = await immichFetch(`/faces/${temporaryPersonId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ id: faceId }),
+        });
+        if (!move.ok) {
+          await immichFetch(`/people/${temporaryPersonId}`, { method: 'DELETE' });
+          temporaryPersonId = null;
+          return proxyJson(res, move);
+        }
+
+        const removeTemporaryPerson = await immichFetch(`/people/${temporaryPersonId}`, { method: 'DELETE' });
+        temporaryPersonId = null;
+        if (!removeTemporaryPerson.ok) return proxyJson(res, removeTemporaryPerson);
+
+        const verify = await immichFetch(`/faces?id=${encodeURIComponent(body.assetId)}`);
+        if (!verify.ok) return proxyJson(res, verify);
+        const faces = await verify.json();
+        const detached = faces.find((face) => face.id === faceId);
+        if (!detached) return json(res, 409, { message: 'Zuordnung gelöst, aber Immich liefert die Face-Markierung danach nicht mehr zurück.' });
+        if (detached.person != null || detached.personId != null) return json(res, 409, { message: 'Face ist noch einer Person zugeordnet.' });
+        return json(res, 200, { ok: true, face: detached });
+      } catch (error) {
+        if (temporaryPersonId) {
+          try { await immichFetch(`/people/${temporaryPersonId}`, { method: 'DELETE' }); } catch {}
+        }
+        throw error;
+      }
     }
 
     const deleteFaceMatch = url.pathname.match(/^\/review-api\/faces\/([0-9a-f-]+)$/i);

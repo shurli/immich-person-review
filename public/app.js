@@ -22,16 +22,23 @@ async function api(url, options = {}) {
     ...options,
     headers: { 'content-type': 'application/json', ...(options.headers || {}) },
   });
+  const text = r.status === 204 ? '' : await r.text();
+  let data = null;
+  if (text) {
+    const ct = r.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      try { data = JSON.parse(text); } catch { data = text; }
+    } else {
+      data = text;
+    }
+  }
   if (!r.ok) {
     let msg = `HTTP ${r.status}`;
-    try {
-      const d = await r.json();
-      msg = Array.isArray(d.message) ? d.message.join(', ') : d.message || msg;
-    } catch {}
+    if (data && typeof data === 'object') msg = Array.isArray(data.message) ? data.message.join(', ') : data.message || msg;
+    else if (typeof data === 'string' && data.trim()) msg = data.trim();
     throw new Error(msg);
   }
-  const ct = r.headers.get('content-type') || '';
-  return ct.includes('application/json') ? r.json() : r;
+  return data;
 }
 
 function toast(msg) {
@@ -229,7 +236,7 @@ function appendTimeline(items) {
     const taken = asset.fileCreatedAt || asset.localDateTime || asset.createdAt;
     const beforeBirth = isBeforeBirth(state.person.birthDate, taken);
     card.dataset.beforeBirth = beforeBirth ? 'true' : 'false';
-    card.innerHTML = `<div class="full-wrap"><img class="full-photo" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Foto')}"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><button class="btn remove remove-face" disabled>Markierung entfernen</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
+    card.innerHTML = `<div class="full-wrap"><img class="full-photo" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Foto')}"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><button class="btn detach detach-face" disabled>Zuordnung lösen</button><button class="btn remove remove-face" disabled>Markierung entfernen</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
     tl.appendChild(card);
     faceObserver.observe(card);
   }
@@ -261,6 +268,9 @@ async function loadFaceForCard(card, asset) {
     const button = card.querySelector('.reassign');
     button.disabled = false;
     button.onclick = () => openReassign(card, face, asset);
+    const detachButton = card.querySelector('.detach-face');
+    detachButton.disabled = false;
+    detachButton.onclick = () => detachFace(card, face, asset);
     const removeButton = card.querySelector('.remove-face');
     removeButton.disabled = false;
     removeButton.onclick = () => removeFace(card, face, asset);
@@ -369,6 +379,43 @@ function markCardReviewed(card, label = 'Korrigiert') {
 
 function markReviewed() {
   markCardReviewed(state.activeCard);
+}
+
+async function scrollToNextCard(card) {
+  let next = card?.nextElementSibling;
+  if (!next && state.nextPage != null) {
+    await loadNextPage();
+    next = card?.nextElementSibling;
+  }
+  if (next?.classList?.contains('review-card')) {
+    requestAnimationFrame(() => next.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+}
+
+async function detachFace(card, face, asset) {
+  const button = card?.querySelector('.detach-face');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Zuordnung wird gelöst…';
+  }
+  try {
+    await api(`/review-api/faces/${face.id}/unassign`, {
+      method: 'POST',
+      body: JSON.stringify({ assetId: asset.id }),
+    });
+    card.querySelector('.face-box')?.classList.add('hidden');
+    markCardReviewed(card, 'Zuordnung gelöst');
+    toast('Face bleibt erhalten · Personenzuordnung entfernt');
+    await scrollToNextCard(card);
+    return true;
+  } catch (e) {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Zuordnung lösen';
+    }
+    toast(e.message);
+    return false;
+  }
 }
 
 async function removeFace(card, face, asset, { confirmDelete = true } = {}) {

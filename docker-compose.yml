@@ -6,9 +6,9 @@ services:
     restart: unless-stopped
     ports:
       - "3030:3000"
+    env_file:
+      - .env
     environment:
-      IMMICH_URL: "http://immich-server:2283"
-      IMMICH_API_KEY: "${IMMICH_API_KEY}"
       PORT: "3000"
-      # Optional: URL prefix if your Immich endpoint already includes /api.
-      IMMICH_API_PREFIX: "/api"
+      # Optional. Standardmaessig nutzt Immich /api.
+      IMMICH_API_PREFIX: "${IMMICH_API_PREFIX:-/api}"
