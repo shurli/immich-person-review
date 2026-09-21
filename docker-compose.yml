@@ -1,7 +1,7 @@
 services:
   immich-person-review:
     build: .
-    image: immich-person-review:0.10.0
+    image: immich-person-review:0.11.0
     container_name: immich-person-review
     restart: unless-stopped
     ports:
@@ -10,8 +10,14 @@ services:
       - .env
     environment:
       PORT: "3000"
+      TAG_TAXONOMY_PATH: /app/data/tags.json
+    volumes:
+      - tag-taxonomy:/app/data
     networks:
       - immich
+
+volumes:
+  tag-taxonomy:
 
 networks:
   immich:

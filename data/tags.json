@@ -1,0 +1,5973 @@
+{
+  "schema_version": 2,
+  "taxonomy_version": "siglip2-photo-de-v1",
+  "target_model": "ViT-SO400M-16-SigLIP2-384__webli",
+  "processing_tag": "KI/Status/siglip2-photo-de-v1",
+  "tag_language": "de",
+  "prompt_language": "en",
+  "classification": {
+    "strategy": "independent_multi_label",
+    "prompt_scoring": "score each prompt separately",
+    "aggregation_default": "top2_mean",
+    "threshold_policy": "per_concept_calibration_required"
+  },
+  "notes": [
+    "Visible Immich tags are German; model prompts remain English.",
+    "SigLIP2/WebLI was trained on naturally occurring web image-text/alt-text pairs, not one fixed prompt template.",
+    "Thresholds must be calibrated using the exact Immich model and representative library images.",
+    "Prompt wording is a v1 baseline and can be hand-tuned per concept after evaluation."
+  ],
+  "concept_count": 350,
+  "concepts": [
+    {
+      "id": "dog",
+      "tag": "KI/Tiere/Hund",
+      "label_de": "Hund",
+      "label_en": "dog",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "dog",
+        "a dog",
+        "a photo of a dog",
+        "dog in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cat",
+      "tag": "KI/Tiere/Katze",
+      "label_de": "Katze",
+      "label_en": "cat",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "cat",
+        "a cat",
+        "a photo of a cat",
+        "cat in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "horse",
+      "tag": "KI/Tiere/Pferd",
+      "label_de": "Pferd",
+      "label_en": "horse",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "horse",
+        "a horse",
+        "a photo of a horse",
+        "horse in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cow",
+      "tag": "KI/Tiere/Kuh",
+      "label_de": "Kuh",
+      "label_en": "cow",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "cow",
+        "a cow",
+        "a photo of a cow",
+        "cow in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sheep",
+      "tag": "KI/Tiere/Schaf",
+      "label_de": "Schaf",
+      "label_en": "sheep",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "sheep",
+        "a sheep",
+        "a photo of a sheep",
+        "sheep in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "goat",
+      "tag": "KI/Tiere/Ziege",
+      "label_de": "Ziege",
+      "label_en": "goat",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "goat",
+        "a goat",
+        "a photo of a goat",
+        "goat in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "pig",
+      "tag": "KI/Tiere/Schwein",
+      "label_de": "Schwein",
+      "label_en": "pig",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "pig",
+        "a pig",
+        "a photo of a pig",
+        "pig in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "rabbit",
+      "tag": "KI/Tiere/Kaninchen",
+      "label_de": "Kaninchen",
+      "label_en": "rabbit",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "rabbit",
+        "a rabbit",
+        "a photo of a rabbit",
+        "rabbit in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "deer",
+      "tag": "KI/Tiere/Hirsch",
+      "label_de": "Hirsch",
+      "label_en": "deer",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "deer",
+        "a deer",
+        "a photo of a deer",
+        "deer in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fox",
+      "tag": "KI/Tiere/Fuchs",
+      "label_de": "Fuchs",
+      "label_en": "fox",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "fox",
+        "a fox",
+        "a photo of a fox",
+        "fox in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "wolf",
+      "tag": "KI/Tiere/Wolf",
+      "label_de": "Wolf",
+      "label_en": "wolf",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "wolf",
+        "a wolf",
+        "a photo of a wolf",
+        "wolf in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bear",
+      "tag": "KI/Tiere/Bär",
+      "label_de": "Bär",
+      "label_en": "bear",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "bear",
+        "a bear",
+        "a photo of a bear",
+        "bear in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "squirrel",
+      "tag": "KI/Tiere/Eichhörnchen",
+      "label_de": "Eichhörnchen",
+      "label_en": "squirrel",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "squirrel",
+        "a squirrel",
+        "a photo of a squirrel",
+        "squirrel in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "hedgehog",
+      "tag": "KI/Tiere/Igel",
+      "label_de": "Igel",
+      "label_en": "hedgehog",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "hedgehog",
+        "a hedgehog",
+        "a photo of a hedgehog",
+        "hedgehog in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "mouse",
+      "tag": "KI/Tiere/Maus",
+      "label_de": "Maus",
+      "label_en": "mouse",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "mouse",
+        "a mouse",
+        "a photo of a mouse",
+        "mouse in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "rat",
+      "tag": "KI/Tiere/Ratte",
+      "label_de": "Ratte",
+      "label_en": "rat",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "rat",
+        "a rat",
+        "a photo of a rat",
+        "rat in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bird",
+      "tag": "KI/Tiere/Vogel",
+      "label_de": "Vogel",
+      "label_en": "bird",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "bird",
+        "a bird",
+        "a photo of a bird",
+        "bird in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "duck",
+      "tag": "KI/Tiere/Ente",
+      "label_de": "Ente",
+      "label_en": "duck",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "duck",
+        "a duck",
+        "a photo of a duck",
+        "duck in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "goose",
+      "tag": "KI/Tiere/Gans",
+      "label_de": "Gans",
+      "label_en": "goose",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "goose",
+        "a goose",
+        "a photo of a goose",
+        "goose in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "swan",
+      "tag": "KI/Tiere/Schwan",
+      "label_de": "Schwan",
+      "label_en": "swan",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "swan",
+        "a swan",
+        "a photo of a swan",
+        "swan in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "chicken",
+      "tag": "KI/Tiere/Huhn",
+      "label_de": "Huhn",
+      "label_en": "chicken",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "chicken",
+        "a chicken",
+        "a photo of a chicken",
+        "chicken in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "rooster",
+      "tag": "KI/Tiere/Hahn",
+      "label_de": "Hahn",
+      "label_en": "rooster",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "rooster",
+        "a rooster",
+        "a photo of a rooster",
+        "rooster in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "turkey",
+      "tag": "KI/Tiere/Truthahn",
+      "label_de": "Truthahn",
+      "label_en": "turkey",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "turkey",
+        "a turkey",
+        "a photo of a turkey",
+        "turkey in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "pigeon",
+      "tag": "KI/Tiere/Taube",
+      "label_de": "Taube",
+      "label_en": "pigeon",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "pigeon",
+        "a pigeon",
+        "a photo of a pigeon",
+        "pigeon in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "seagull",
+      "tag": "KI/Tiere/Möwe",
+      "label_de": "Möwe",
+      "label_en": "seagull",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "seagull",
+        "a seagull",
+        "a photo of a seagull",
+        "seagull in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "eagle",
+      "tag": "KI/Tiere/Adler",
+      "label_de": "Adler",
+      "label_en": "eagle",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "eagle",
+        "an eagle",
+        "a photo of an eagle",
+        "eagle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "owl",
+      "tag": "KI/Tiere/Eule",
+      "label_de": "Eule",
+      "label_en": "owl",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "owl",
+        "an owl",
+        "a photo of an owl",
+        "owl in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "parrot",
+      "tag": "KI/Tiere/Papagei",
+      "label_de": "Papagei",
+      "label_en": "parrot",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "parrot",
+        "a parrot",
+        "a photo of a parrot",
+        "parrot in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fish",
+      "tag": "KI/Tiere/Fisch",
+      "label_de": "Fisch",
+      "label_en": "fish",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "fish",
+        "a fish",
+        "a photo of a fish",
+        "fish in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "shark",
+      "tag": "KI/Tiere/Hai",
+      "label_de": "Hai",
+      "label_en": "shark",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "shark",
+        "a shark",
+        "a photo of a shark",
+        "shark in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "dolphin",
+      "tag": "KI/Tiere/Delfin",
+      "label_de": "Delfin",
+      "label_en": "dolphin",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "dolphin",
+        "a dolphin",
+        "a photo of a dolphin",
+        "dolphin in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "whale",
+      "tag": "KI/Tiere/Wal",
+      "label_de": "Wal",
+      "label_en": "whale",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "whale",
+        "a whale",
+        "a photo of a whale",
+        "whale in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "seal",
+      "tag": "KI/Tiere/Robbe",
+      "label_de": "Robbe",
+      "label_en": "seal",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "seal",
+        "a seal",
+        "a photo of a seal",
+        "seal in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "turtle",
+      "tag": "KI/Tiere/Schildkröte",
+      "label_de": "Schildkröte",
+      "label_en": "turtle",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "turtle",
+        "a turtle",
+        "a photo of a turtle",
+        "turtle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "frog",
+      "tag": "KI/Tiere/Frosch",
+      "label_de": "Frosch",
+      "label_en": "frog",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "frog",
+        "a frog",
+        "a photo of a frog",
+        "frog in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "snake",
+      "tag": "KI/Tiere/Schlange",
+      "label_de": "Schlange",
+      "label_en": "snake",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "snake",
+        "a snake",
+        "a photo of a snake",
+        "snake in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "lizard",
+      "tag": "KI/Tiere/Eidechse",
+      "label_de": "Eidechse",
+      "label_en": "lizard",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "lizard",
+        "a lizard",
+        "a photo of a lizard",
+        "lizard in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "butterfly",
+      "tag": "KI/Tiere/Schmetterling",
+      "label_de": "Schmetterling",
+      "label_en": "butterfly",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "butterfly",
+        "a butterfly",
+        "a photo of a butterfly",
+        "butterfly in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bee",
+      "tag": "KI/Tiere/Biene",
+      "label_de": "Biene",
+      "label_en": "bee",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "bee",
+        "a bee",
+        "a photo of a bee",
+        "bee in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "spider",
+      "tag": "KI/Tiere/Spinne",
+      "label_de": "Spinne",
+      "label_en": "spider",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "spider",
+        "a spider",
+        "a photo of a spider",
+        "spider in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "insect",
+      "tag": "KI/Tiere/Insekt",
+      "label_de": "Insekt",
+      "label_en": "insect",
+      "category": "animals",
+      "parent": "KI/Tiere",
+      "prompts_en": [
+        "insect",
+        "an insect",
+        "a photo of an insect",
+        "insect in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "car",
+      "tag": "KI/Fahrzeuge/Auto",
+      "label_de": "Auto",
+      "label_en": "car",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "car",
+        "a car",
+        "a photo of a car",
+        "car in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "truck",
+      "tag": "KI/Fahrzeuge/Lastwagen",
+      "label_de": "Lastwagen",
+      "label_en": "truck",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "truck",
+        "a truck",
+        "a photo of a truck",
+        "truck in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bus",
+      "tag": "KI/Fahrzeuge/Bus",
+      "label_de": "Bus",
+      "label_en": "bus",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "bus",
+        "a bus",
+        "a photo of a bus",
+        "bus in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "van",
+      "tag": "KI/Fahrzeuge/Transporter",
+      "label_de": "Transporter",
+      "label_en": "van",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "van",
+        "a van",
+        "a photo of a van",
+        "van in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "motorcycle",
+      "tag": "KI/Fahrzeuge/Motorrad",
+      "label_de": "Motorrad",
+      "label_en": "motorcycle",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "motorcycle",
+        "a motorcycle",
+        "a photo of a motorcycle",
+        "motorcycle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bicycle",
+      "tag": "KI/Fahrzeuge/Fahrrad",
+      "label_de": "Fahrrad",
+      "label_en": "bicycle",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "bicycle",
+        "a bicycle",
+        "a photo of a bicycle",
+        "bicycle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "scooter",
+      "tag": "KI/Fahrzeuge/Roller",
+      "label_de": "Roller",
+      "label_en": "scooter",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "scooter",
+        "a scooter",
+        "a photo of a scooter",
+        "scooter in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "train",
+      "tag": "KI/Fahrzeuge/Zug",
+      "label_de": "Zug",
+      "label_en": "train",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "train",
+        "a train",
+        "a photo of a train",
+        "train in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tram",
+      "tag": "KI/Fahrzeuge/Straßenbahn",
+      "label_de": "Straßenbahn",
+      "label_en": "tram",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "tram",
+        "a tram",
+        "a photo of a tram",
+        "tram in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "subway",
+      "tag": "KI/Fahrzeuge/U-Bahn",
+      "label_de": "U-Bahn",
+      "label_en": "subway",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "subway",
+        "a subway",
+        "a photo of a subway",
+        "subway in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "airplane",
+      "tag": "KI/Fahrzeuge/Flugzeug",
+      "label_de": "Flugzeug",
+      "label_en": "airplane",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "airplane",
+        "an airplane",
+        "a photo of an airplane",
+        "airplane in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "helicopter",
+      "tag": "KI/Fahrzeuge/Hubschrauber",
+      "label_de": "Hubschrauber",
+      "label_en": "helicopter",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "helicopter",
+        "a helicopter",
+        "a photo of a helicopter",
+        "helicopter in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "boat",
+      "tag": "KI/Fahrzeuge/Boot",
+      "label_de": "Boot",
+      "label_en": "boat",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "boat",
+        "a boat",
+        "a photo of a boat",
+        "boat in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "ship",
+      "tag": "KI/Fahrzeuge/Schiff",
+      "label_de": "Schiff",
+      "label_en": "ship",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "ship",
+        "a ship",
+        "a photo of a ship",
+        "ship in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sailboat",
+      "tag": "KI/Fahrzeuge/Segelboot",
+      "label_de": "Segelboot",
+      "label_en": "sailboat",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "sailboat",
+        "a sailboat",
+        "a photo of a sailboat",
+        "sailboat in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "kayak",
+      "tag": "KI/Fahrzeuge/Kajak",
+      "label_de": "Kajak",
+      "label_en": "kayak",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "kayak",
+        "a kayak",
+        "a photo of a kayak",
+        "kayak in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tractor",
+      "tag": "KI/Fahrzeuge/Traktor",
+      "label_de": "Traktor",
+      "label_en": "tractor",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "tractor",
+        "a tractor",
+        "a photo of a tractor",
+        "tractor in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "construction_vehicle",
+      "tag": "KI/Fahrzeuge/Baufahrzeug",
+      "label_de": "Baufahrzeug",
+      "label_en": "construction vehicle",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "construction vehicle",
+        "a construction vehicle",
+        "a photo of a construction vehicle",
+        "construction vehicle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "camper",
+      "tag": "KI/Fahrzeuge/Wohnmobil",
+      "label_de": "Wohnmobil",
+      "label_en": "camper",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "camper",
+        "a camper",
+        "a photo of a camper",
+        "camper in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "caravan",
+      "tag": "KI/Fahrzeuge/Wohnwagen",
+      "label_de": "Wohnwagen",
+      "label_en": "caravan",
+      "category": "vehicles",
+      "parent": "KI/Fahrzeuge",
+      "prompts_en": [
+        "caravan",
+        "a caravan",
+        "a photo of a caravan",
+        "caravan in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "mountain",
+      "tag": "KI/Natur & Landschaft/Berg",
+      "label_de": "Berg",
+      "label_en": "mountain",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "mountain",
+        "a mountain",
+        "a photo of a mountain",
+        "mountain in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "hill",
+      "tag": "KI/Natur & Landschaft/Hügel",
+      "label_de": "Hügel",
+      "label_en": "hill",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "hill",
+        "a hill",
+        "a photo of a hill",
+        "hill in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "forest",
+      "tag": "KI/Natur & Landschaft/Wald",
+      "label_de": "Wald",
+      "label_en": "forest",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "forest",
+        "a forest",
+        "a photo of a forest",
+        "forest in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tree",
+      "tag": "KI/Natur & Landschaft/Baum",
+      "label_de": "Baum",
+      "label_en": "tree",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "tree",
+        "a tree",
+        "a photo of a tree",
+        "tree in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "meadow",
+      "tag": "KI/Natur & Landschaft/Wiese",
+      "label_de": "Wiese",
+      "label_en": "meadow",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "meadow",
+        "a meadow",
+        "a photo of a meadow",
+        "meadow in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "field",
+      "tag": "KI/Natur & Landschaft/Feld",
+      "label_de": "Feld",
+      "label_en": "field",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "field",
+        "a field",
+        "a photo of a field",
+        "field in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "farmland",
+      "tag": "KI/Natur & Landschaft/Ackerland",
+      "label_de": "Ackerland",
+      "label_en": "farmland",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "farmland",
+        "a farmland",
+        "a photo of a farmland",
+        "farmland in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "lake",
+      "tag": "KI/Natur & Landschaft/See",
+      "label_de": "See",
+      "label_en": "lake",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "lake",
+        "a lake",
+        "a photo of a lake",
+        "lake in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "river",
+      "tag": "KI/Natur & Landschaft/Fluss",
+      "label_de": "Fluss",
+      "label_en": "river",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "river",
+        "a river",
+        "a photo of a river",
+        "river in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "stream",
+      "tag": "KI/Natur & Landschaft/Bach",
+      "label_de": "Bach",
+      "label_en": "stream",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "stream",
+        "a stream",
+        "a photo of a stream",
+        "stream in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "waterfall",
+      "tag": "KI/Natur & Landschaft/Wasserfall",
+      "label_de": "Wasserfall",
+      "label_en": "waterfall",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "waterfall",
+        "a waterfall",
+        "a photo of a waterfall",
+        "waterfall in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sea",
+      "tag": "KI/Natur & Landschaft/Meer",
+      "label_de": "Meer",
+      "label_en": "sea",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "sea",
+        "a sea",
+        "a photo of a sea",
+        "sea in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "ocean",
+      "tag": "KI/Natur & Landschaft/Ozean",
+      "label_de": "Ozean",
+      "label_en": "ocean",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "ocean",
+        "an ocean",
+        "a photo of an ocean",
+        "ocean in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "beach",
+      "tag": "KI/Natur & Landschaft/Strand",
+      "label_de": "Strand",
+      "label_en": "beach",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "beach",
+        "a beach",
+        "a photo of a beach",
+        "beach in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cliff",
+      "tag": "KI/Natur & Landschaft/Klippe",
+      "label_de": "Klippe",
+      "label_en": "cliff",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "cliff",
+        "a cliff",
+        "a photo of a cliff",
+        "cliff in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cave",
+      "tag": "KI/Natur & Landschaft/Höhle",
+      "label_de": "Höhle",
+      "label_en": "cave",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "cave",
+        "a cave",
+        "a photo of a cave",
+        "cave in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "desert",
+      "tag": "KI/Natur & Landschaft/Wüste",
+      "label_de": "Wüste",
+      "label_en": "desert",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "desert",
+        "a desert",
+        "a photo of a desert",
+        "desert in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "island",
+      "tag": "KI/Natur & Landschaft/Insel",
+      "label_de": "Insel",
+      "label_en": "island",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "island",
+        "an island",
+        "a photo of an island",
+        "island in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "glacier",
+      "tag": "KI/Natur & Landschaft/Gletscher",
+      "label_de": "Gletscher",
+      "label_en": "glacier",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "glacier",
+        "a glacier",
+        "a photo of a glacier",
+        "glacier in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "snow",
+      "tag": "KI/Natur & Landschaft/Schnee",
+      "label_de": "Schnee",
+      "label_en": "snow",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "snow",
+        "a snow",
+        "a photo of a snow",
+        "snow in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "ice",
+      "tag": "KI/Natur & Landschaft/Eis",
+      "label_de": "Eis",
+      "label_en": "ice",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "ice",
+        "an ice",
+        "a photo of an ice",
+        "ice in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "rock",
+      "tag": "KI/Natur & Landschaft/Felsen",
+      "label_de": "Felsen",
+      "label_en": "rock",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "rock",
+        "a rock",
+        "a photo of a rock",
+        "rock in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "flower",
+      "tag": "KI/Natur & Landschaft/Blume",
+      "label_de": "Blume",
+      "label_en": "flower",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "flower",
+        "a flower",
+        "a photo of a flower",
+        "flower in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "garden",
+      "tag": "KI/Natur & Landschaft/Garten",
+      "label_de": "Garten",
+      "label_en": "garden",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "garden",
+        "a garden",
+        "a photo of a garden",
+        "garden in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "vineyard",
+      "tag": "KI/Natur & Landschaft/Weinberg",
+      "label_de": "Weinberg",
+      "label_en": "vineyard",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "vineyard",
+        "a vineyard",
+        "a photo of a vineyard",
+        "vineyard in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sunrise",
+      "tag": "KI/Natur & Landschaft/Sonnenaufgang",
+      "label_de": "Sonnenaufgang",
+      "label_en": "sunrise",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "sunrise",
+        "a sunrise",
+        "a photo of a sunrise",
+        "sunrise in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sunset",
+      "tag": "KI/Natur & Landschaft/Sonnenuntergang",
+      "label_de": "Sonnenuntergang",
+      "label_en": "sunset",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "sunset",
+        "a sunset",
+        "a photo of a sunset",
+        "sunset in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "rainbow",
+      "tag": "KI/Natur & Landschaft/Regenbogen",
+      "label_de": "Regenbogen",
+      "label_en": "rainbow",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "rainbow",
+        "a rainbow",
+        "a photo of a rainbow",
+        "rainbow in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "clouds",
+      "tag": "KI/Natur & Landschaft/Wolken",
+      "label_de": "Wolken",
+      "label_en": "clouds",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "clouds",
+        "a clouds",
+        "a photo of a clouds",
+        "clouds in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "storm",
+      "tag": "KI/Natur & Landschaft/Sturm",
+      "label_de": "Sturm",
+      "label_en": "storm",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "storm",
+        "a storm",
+        "a photo of a storm",
+        "storm in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fog",
+      "tag": "KI/Natur & Landschaft/Nebel",
+      "label_de": "Nebel",
+      "label_en": "fog",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "fog",
+        "a fog",
+        "a photo of a fog",
+        "fog in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "rain",
+      "tag": "KI/Natur & Landschaft/Regen",
+      "label_de": "Regen",
+      "label_en": "rain",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "rain",
+        "a rain",
+        "a photo of a rain",
+        "rain in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "autumn_foliage",
+      "tag": "KI/Natur & Landschaft/Herbstlaub",
+      "label_de": "Herbstlaub",
+      "label_en": "autumn foliage",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "autumn foliage",
+        "an autumn foliage",
+        "a photo of an autumn foliage",
+        "autumn foliage in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "spring_blossoms",
+      "tag": "KI/Natur & Landschaft/Frühlingsblüte",
+      "label_de": "Frühlingsblüte",
+      "label_en": "spring blossoms",
+      "category": "nature",
+      "parent": "KI/Natur & Landschaft",
+      "prompts_en": [
+        "spring blossoms",
+        "a spring blossoms",
+        "a photo of a spring blossoms",
+        "spring blossoms in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "city",
+      "tag": "KI/Orte & Umgebung/Stadt",
+      "label_de": "Stadt",
+      "label_en": "city",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "city",
+        "a city",
+        "a photo of a city",
+        "city in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "village",
+      "tag": "KI/Orte & Umgebung/Dorf",
+      "label_de": "Dorf",
+      "label_en": "village",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "village",
+        "a village",
+        "a photo of a village",
+        "village in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "street",
+      "tag": "KI/Orte & Umgebung/Straße",
+      "label_de": "Straße",
+      "label_en": "street",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "street",
+        "a street",
+        "a photo of a street",
+        "street in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "road",
+      "tag": "KI/Orte & Umgebung/Landstraße",
+      "label_de": "Landstraße",
+      "label_en": "road",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "road",
+        "a road",
+        "a photo of a road",
+        "road in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "highway",
+      "tag": "KI/Orte & Umgebung/Autobahn",
+      "label_de": "Autobahn",
+      "label_en": "highway",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "highway",
+        "a highway",
+        "a photo of a highway",
+        "highway in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bridge",
+      "tag": "KI/Orte & Umgebung/Brücke",
+      "label_de": "Brücke",
+      "label_en": "bridge",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "bridge",
+        "a bridge",
+        "a photo of a bridge",
+        "bridge in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tunnel",
+      "tag": "KI/Orte & Umgebung/Tunnel",
+      "label_de": "Tunnel",
+      "label_en": "tunnel",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "tunnel",
+        "a tunnel",
+        "a photo of a tunnel",
+        "tunnel in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "railway_station",
+      "tag": "KI/Orte & Umgebung/Bahnhof",
+      "label_de": "Bahnhof",
+      "label_en": "railway station",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "railway station",
+        "a railway station",
+        "a photo of a railway station",
+        "railway station in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "airport",
+      "tag": "KI/Orte & Umgebung/Flughafen",
+      "label_de": "Flughafen",
+      "label_en": "airport",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "airport",
+        "an airport",
+        "a photo of an airport",
+        "airport in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "harbor",
+      "tag": "KI/Orte & Umgebung/Hafen",
+      "label_de": "Hafen",
+      "label_en": "harbor",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "harbor",
+        "a harbor",
+        "a photo of a harbor",
+        "harbor in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "parking_lot",
+      "tag": "KI/Orte & Umgebung/Parkplatz",
+      "label_de": "Parkplatz",
+      "label_en": "parking lot",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "parking lot",
+        "a parking lot",
+        "a photo of a parking lot",
+        "parking lot in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "park",
+      "tag": "KI/Orte & Umgebung/Park",
+      "label_de": "Park",
+      "label_en": "park",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "park",
+        "a park",
+        "a photo of a park",
+        "park in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "playground",
+      "tag": "KI/Orte & Umgebung/Spielplatz",
+      "label_de": "Spielplatz",
+      "label_en": "playground",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "playground",
+        "a playground",
+        "a photo of a playground",
+        "playground in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "zoo",
+      "tag": "KI/Orte & Umgebung/Zoo",
+      "label_de": "Zoo",
+      "label_en": "zoo",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "zoo",
+        "a zoo",
+        "a photo of a zoo",
+        "zoo in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "museum",
+      "tag": "KI/Orte & Umgebung/Museum",
+      "label_de": "Museum",
+      "label_en": "museum",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "museum",
+        "a museum",
+        "a photo of a museum",
+        "museum in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "church",
+      "tag": "KI/Orte & Umgebung/Kirche",
+      "label_de": "Kirche",
+      "label_en": "church",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "church",
+        "a church",
+        "a photo of a church",
+        "church in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "castle",
+      "tag": "KI/Orte & Umgebung/Burg",
+      "label_de": "Burg",
+      "label_en": "castle",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "castle",
+        "a castle",
+        "a photo of a castle",
+        "castle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "palace",
+      "tag": "KI/Orte & Umgebung/Schloss",
+      "label_de": "Schloss",
+      "label_en": "palace",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "palace",
+        "a palace",
+        "a photo of a palace",
+        "palace in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "monument",
+      "tag": "KI/Orte & Umgebung/Denkmal",
+      "label_de": "Denkmal",
+      "label_en": "monument",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "monument",
+        "a monument",
+        "a photo of a monument",
+        "monument in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tower",
+      "tag": "KI/Orte & Umgebung/Turm",
+      "label_de": "Turm",
+      "label_en": "tower",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "tower",
+        "a tower",
+        "a photo of a tower",
+        "tower in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "stadium",
+      "tag": "KI/Orte & Umgebung/Stadion",
+      "label_de": "Stadion",
+      "label_en": "stadium",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "stadium",
+        "a stadium",
+        "a photo of a stadium",
+        "stadium in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "restaurant",
+      "tag": "KI/Orte & Umgebung/Restaurant",
+      "label_de": "Restaurant",
+      "label_en": "restaurant",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "restaurant",
+        "a restaurant",
+        "a photo of a restaurant",
+        "restaurant in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cafe",
+      "tag": "KI/Orte & Umgebung/Café",
+      "label_de": "Café",
+      "label_en": "cafe",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "cafe",
+        "a cafe",
+        "a photo of a cafe",
+        "cafe in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bar",
+      "tag": "KI/Orte & Umgebung/Bar",
+      "label_de": "Bar",
+      "label_en": "bar",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "bar",
+        "a bar",
+        "a photo of a bar",
+        "bar in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "hotel",
+      "tag": "KI/Orte & Umgebung/Hotel",
+      "label_de": "Hotel",
+      "label_en": "hotel",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "hotel",
+        "a hotel",
+        "a photo of a hotel",
+        "hotel in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "office",
+      "tag": "KI/Orte & Umgebung/Büro",
+      "label_de": "Büro",
+      "label_en": "office",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "office",
+        "an office",
+        "a photo of an office",
+        "office in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "factory",
+      "tag": "KI/Orte & Umgebung/Fabrik",
+      "label_de": "Fabrik",
+      "label_en": "factory",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "factory",
+        "a factory",
+        "a photo of a factory",
+        "factory in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "warehouse",
+      "tag": "KI/Orte & Umgebung/Lagerhalle",
+      "label_de": "Lagerhalle",
+      "label_en": "warehouse",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "warehouse",
+        "a warehouse",
+        "a photo of a warehouse",
+        "warehouse in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "construction_site",
+      "tag": "KI/Orte & Umgebung/Baustelle",
+      "label_de": "Baustelle",
+      "label_en": "construction site",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "construction site",
+        "a construction site",
+        "a photo of a construction site",
+        "construction site in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "shop",
+      "tag": "KI/Orte & Umgebung/Geschäft",
+      "label_de": "Geschäft",
+      "label_en": "shop",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "shop",
+        "a shop",
+        "a photo of a shop",
+        "shop in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "supermarket",
+      "tag": "KI/Orte & Umgebung/Supermarkt",
+      "label_de": "Supermarkt",
+      "label_en": "supermarket",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "supermarket",
+        "a supermarket",
+        "a photo of a supermarket",
+        "supermarket in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "shopping_mall",
+      "tag": "KI/Orte & Umgebung/Einkaufszentrum",
+      "label_de": "Einkaufszentrum",
+      "label_en": "shopping mall",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "shopping mall",
+        "a shopping mall",
+        "a photo of a shopping mall",
+        "shopping mall in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "market",
+      "tag": "KI/Orte & Umgebung/Markt",
+      "label_de": "Markt",
+      "label_en": "market",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "market",
+        "a market",
+        "a photo of a market",
+        "market in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "hospital",
+      "tag": "KI/Orte & Umgebung/Krankenhaus",
+      "label_de": "Krankenhaus",
+      "label_en": "hospital",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "hospital",
+        "a hospital",
+        "a photo of a hospital",
+        "hospital in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "school",
+      "tag": "KI/Orte & Umgebung/Schule",
+      "label_de": "Schule",
+      "label_en": "school",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "school",
+        "a school",
+        "a photo of a school",
+        "school in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "university",
+      "tag": "KI/Orte & Umgebung/Universität",
+      "label_de": "Universität",
+      "label_en": "university",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "university",
+        "an university",
+        "a photo of an university",
+        "university in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "library",
+      "tag": "KI/Orte & Umgebung/Bibliothek",
+      "label_de": "Bibliothek",
+      "label_en": "library",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "library",
+        "a library",
+        "a photo of a library",
+        "library in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "home_interior",
+      "tag": "KI/Orte & Umgebung/Wohnraum",
+      "label_de": "Wohnraum",
+      "label_en": "home interior",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "home interior",
+        "a home interior",
+        "a photo of a home interior",
+        "home interior in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "living_room",
+      "tag": "KI/Orte & Umgebung/Wohnzimmer",
+      "label_de": "Wohnzimmer",
+      "label_en": "living room",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "living room",
+        "a living room",
+        "a photo of a living room",
+        "living room in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bedroom",
+      "tag": "KI/Orte & Umgebung/Schlafzimmer",
+      "label_de": "Schlafzimmer",
+      "label_en": "bedroom",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "bedroom",
+        "a bedroom",
+        "a photo of a bedroom",
+        "bedroom in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "kitchen",
+      "tag": "KI/Orte & Umgebung/Küche",
+      "label_de": "Küche",
+      "label_en": "kitchen",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "kitchen",
+        "a kitchen",
+        "a photo of a kitchen",
+        "kitchen in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bathroom",
+      "tag": "KI/Orte & Umgebung/Badezimmer",
+      "label_de": "Badezimmer",
+      "label_en": "bathroom",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "bathroom",
+        "a bathroom",
+        "a photo of a bathroom",
+        "bathroom in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "balcony",
+      "tag": "KI/Orte & Umgebung/Balkon",
+      "label_de": "Balkon",
+      "label_en": "balcony",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "balcony",
+        "a balcony",
+        "a photo of a balcony",
+        "balcony in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "terrace",
+      "tag": "KI/Orte & Umgebung/Terrasse",
+      "label_de": "Terrasse",
+      "label_en": "terrace",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "terrace",
+        "a terrace",
+        "a photo of a terrace",
+        "terrace in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "backyard",
+      "tag": "KI/Orte & Umgebung/Hinterhof",
+      "label_de": "Hinterhof",
+      "label_en": "backyard",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "backyard",
+        "a backyard",
+        "a photo of a backyard",
+        "backyard in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "farm",
+      "tag": "KI/Orte & Umgebung/Bauernhof",
+      "label_de": "Bauernhof",
+      "label_en": "farm",
+      "category": "places",
+      "parent": "KI/Orte & Umgebung",
+      "prompts_en": [
+        "farm",
+        "a farm",
+        "a photo of a farm",
+        "farm in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "person",
+      "tag": "KI/Menschen/Person",
+      "label_de": "Person",
+      "label_en": "person",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "person",
+        "a person",
+        "a photo of a person",
+        "person in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "portrait",
+      "tag": "KI/Menschen/Porträt",
+      "label_de": "Porträt",
+      "label_en": "portrait",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "portrait",
+        "a portrait",
+        "a photo of a portrait",
+        "portrait in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "selfie",
+      "tag": "KI/Menschen/Selfie",
+      "label_de": "Selfie",
+      "label_en": "selfie",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "selfie",
+        "a selfie",
+        "a photo of a selfie",
+        "selfie in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "group_photo",
+      "tag": "KI/Menschen/Gruppenfoto",
+      "label_de": "Gruppenfoto",
+      "label_en": "group photo",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "group photo",
+        "a group photo",
+        "a photo of a group photo",
+        "group photo in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "crowd",
+      "tag": "KI/Menschen/Menschenmenge",
+      "label_de": "Menschenmenge",
+      "label_en": "crowd",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "crowd",
+        "a crowd",
+        "a photo of a crowd",
+        "crowd in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "family",
+      "tag": "KI/Menschen/Familie",
+      "label_de": "Familie",
+      "label_en": "family",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "family",
+        "a family",
+        "a photo of a family",
+        "family in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "couple",
+      "tag": "KI/Menschen/Paar",
+      "label_de": "Paar",
+      "label_en": "couple",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "couple",
+        "a couple",
+        "a photo of a couple",
+        "couple in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "baby",
+      "tag": "KI/Menschen/Baby",
+      "label_de": "Baby",
+      "label_en": "baby",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "baby",
+        "a baby",
+        "a photo of a baby",
+        "baby in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "child",
+      "tag": "KI/Menschen/Kind",
+      "label_de": "Kind",
+      "label_en": "child",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "child",
+        "a child",
+        "a photo of a child",
+        "child in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "teenager",
+      "tag": "KI/Menschen/Jugendliche",
+      "label_de": "Jugendliche",
+      "label_en": "teenager",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "teenager",
+        "a teenager",
+        "a photo of a teenager",
+        "teenager in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "adult",
+      "tag": "KI/Menschen/Erwachsene",
+      "label_de": "Erwachsene",
+      "label_en": "adult",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "adult",
+        "an adult",
+        "a photo of an adult",
+        "adult in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "elderly_person",
+      "tag": "KI/Menschen/Ältere Person",
+      "label_de": "Ältere Person",
+      "label_en": "elderly person",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "elderly person",
+        "an elderly person",
+        "a photo of an elderly person",
+        "elderly person in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "man",
+      "tag": "KI/Menschen/Mann",
+      "label_de": "Mann",
+      "label_en": "man",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "man",
+        "a man",
+        "a photo of a man",
+        "man in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "woman",
+      "tag": "KI/Menschen/Frau",
+      "label_de": "Frau",
+      "label_en": "woman",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "woman",
+        "a woman",
+        "a photo of a woman",
+        "woman in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "friends",
+      "tag": "KI/Menschen/Freunde",
+      "label_de": "Freunde",
+      "label_en": "friends",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "friends",
+        "a friends",
+        "a photo of a friends",
+        "friends in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bride",
+      "tag": "KI/Menschen/Braut",
+      "label_de": "Braut",
+      "label_en": "bride",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "bride",
+        "a bride",
+        "a photo of a bride",
+        "bride in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "groom",
+      "tag": "KI/Menschen/Bräutigam",
+      "label_de": "Bräutigam",
+      "label_en": "groom",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "groom",
+        "a groom",
+        "a photo of a groom",
+        "groom in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "worker",
+      "tag": "KI/Menschen/Arbeiter",
+      "label_de": "Arbeiter",
+      "label_en": "worker",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "worker",
+        "a worker",
+        "a photo of a worker",
+        "worker in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "musician",
+      "tag": "KI/Menschen/Musiker",
+      "label_de": "Musiker",
+      "label_en": "musician",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "musician",
+        "a musician",
+        "a photo of a musician",
+        "musician in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "athlete",
+      "tag": "KI/Menschen/Sportler",
+      "label_de": "Sportler",
+      "label_en": "athlete",
+      "category": "people",
+      "parent": "KI/Menschen",
+      "prompts_en": [
+        "athlete",
+        "an athlete",
+        "a photo of an athlete",
+        "athlete in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "walking",
+      "tag": "KI/Aktivitäten/Spazieren",
+      "label_de": "Spazieren",
+      "label_en": "walking",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "walking",
+        "a walking",
+        "a photo of a walking",
+        "walking in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "hiking",
+      "tag": "KI/Aktivitäten/Wandern",
+      "label_de": "Wandern",
+      "label_en": "hiking",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "hiking",
+        "a hiking",
+        "a photo of a hiking",
+        "hiking in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "running",
+      "tag": "KI/Aktivitäten/Laufen",
+      "label_de": "Laufen",
+      "label_en": "running",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "running",
+        "a running",
+        "a photo of a running",
+        "running in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cycling",
+      "tag": "KI/Aktivitäten/Radfahren",
+      "label_de": "Radfahren",
+      "label_en": "cycling",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "cycling",
+        "a cycling",
+        "a photo of a cycling",
+        "cycling in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "mountain_biking",
+      "tag": "KI/Aktivitäten/Mountainbiken",
+      "label_de": "Mountainbiken",
+      "label_en": "mountain biking",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "mountain biking",
+        "a mountain biking",
+        "a photo of a mountain biking",
+        "mountain biking in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "skiing",
+      "tag": "KI/Aktivitäten/Skifahren",
+      "label_de": "Skifahren",
+      "label_en": "skiing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "skiing",
+        "a skiing",
+        "a photo of a skiing",
+        "skiing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "snowboarding",
+      "tag": "KI/Aktivitäten/Snowboarden",
+      "label_de": "Snowboarden",
+      "label_en": "snowboarding",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "snowboarding",
+        "a snowboarding",
+        "a photo of a snowboarding",
+        "snowboarding in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "swimming",
+      "tag": "KI/Aktivitäten/Schwimmen",
+      "label_de": "Schwimmen",
+      "label_en": "swimming",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "swimming",
+        "a swimming",
+        "a photo of a swimming",
+        "swimming in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "diving",
+      "tag": "KI/Aktivitäten/Tauchen",
+      "label_de": "Tauchen",
+      "label_en": "diving",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "diving",
+        "a diving",
+        "a photo of a diving",
+        "diving in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "surfing",
+      "tag": "KI/Aktivitäten/Surfen",
+      "label_de": "Surfen",
+      "label_en": "surfing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "surfing",
+        "a surfing",
+        "a photo of a surfing",
+        "surfing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sailing",
+      "tag": "KI/Aktivitäten/Segeln",
+      "label_de": "Segeln",
+      "label_en": "sailing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "sailing",
+        "a sailing",
+        "a photo of a sailing",
+        "sailing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "kayaking",
+      "tag": "KI/Aktivitäten/Kajakfahren",
+      "label_de": "Kajakfahren",
+      "label_en": "kayaking",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "kayaking",
+        "a kayaking",
+        "a photo of a kayaking",
+        "kayaking in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fishing",
+      "tag": "KI/Aktivitäten/Angeln",
+      "label_de": "Angeln",
+      "label_en": "fishing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "fishing",
+        "a fishing",
+        "a photo of a fishing",
+        "fishing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "climbing",
+      "tag": "KI/Aktivitäten/Klettern",
+      "label_de": "Klettern",
+      "label_en": "climbing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "climbing",
+        "a climbing",
+        "a photo of a climbing",
+        "climbing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "camping",
+      "tag": "KI/Aktivitäten/Camping",
+      "label_de": "Camping",
+      "label_en": "camping",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "camping",
+        "a camping",
+        "a photo of a camping",
+        "camping in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "picnic",
+      "tag": "KI/Aktivitäten/Picknick",
+      "label_de": "Picknick",
+      "label_en": "picnic",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "picnic",
+        "a picnic",
+        "a photo of a picnic",
+        "picnic in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cooking",
+      "tag": "KI/Aktivitäten/Kochen",
+      "label_de": "Kochen",
+      "label_en": "cooking",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "cooking",
+        "a cooking",
+        "a photo of a cooking",
+        "cooking in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "baking",
+      "tag": "KI/Aktivitäten/Backen",
+      "label_de": "Backen",
+      "label_en": "baking",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "baking",
+        "a baking",
+        "a photo of a baking",
+        "baking in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "eating",
+      "tag": "KI/Aktivitäten/Essen",
+      "label_de": "Essen",
+      "label_en": "eating",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "eating",
+        "an eating",
+        "a photo of an eating",
+        "eating in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "drinking",
+      "tag": "KI/Aktivitäten/Trinken",
+      "label_de": "Trinken",
+      "label_en": "drinking",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "drinking",
+        "a drinking",
+        "a photo of a drinking",
+        "drinking in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "barbecue",
+      "tag": "KI/Aktivitäten/Grillen",
+      "label_de": "Grillen",
+      "label_en": "barbecue",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "barbecue",
+        "a barbecue",
+        "a photo of a barbecue",
+        "barbecue in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "gardening",
+      "tag": "KI/Aktivitäten/Gärtnern",
+      "label_de": "Gärtnern",
+      "label_en": "gardening",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "gardening",
+        "a gardening",
+        "a photo of a gardening",
+        "gardening in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "shopping",
+      "tag": "KI/Aktivitäten/Einkaufen",
+      "label_de": "Einkaufen",
+      "label_en": "shopping",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "shopping",
+        "a shopping",
+        "a photo of a shopping",
+        "shopping in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "working",
+      "tag": "KI/Aktivitäten/Arbeiten",
+      "label_de": "Arbeiten",
+      "label_en": "working",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "working",
+        "a working",
+        "a photo of a working",
+        "working in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "studying",
+      "tag": "KI/Aktivitäten/Lernen",
+      "label_de": "Lernen",
+      "label_en": "studying",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "studying",
+        "a studying",
+        "a photo of a studying",
+        "studying in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "reading",
+      "tag": "KI/Aktivitäten/Lesen",
+      "label_de": "Lesen",
+      "label_en": "reading",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "reading",
+        "a reading",
+        "a photo of a reading",
+        "reading in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "writing",
+      "tag": "KI/Aktivitäten/Schreiben",
+      "label_de": "Schreiben",
+      "label_en": "writing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "writing",
+        "a writing",
+        "a photo of a writing",
+        "writing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "painting",
+      "tag": "KI/Aktivitäten/Gemälde",
+      "label_de": "Gemälde",
+      "label_en": "painting",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "painting",
+        "a painting",
+        "a photo of a painting",
+        "painting in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "drawing",
+      "tag": "KI/Aktivitäten/Zeichnung",
+      "label_de": "Zeichnung",
+      "label_en": "drawing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "drawing",
+        "a drawing",
+        "a photo of a drawing",
+        "drawing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "photography",
+      "tag": "KI/Aktivitäten/Fotografieren",
+      "label_de": "Fotografieren",
+      "label_en": "photography",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "photography",
+        "a photography",
+        "a photo of a photography",
+        "photography in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "playing_music",
+      "tag": "KI/Aktivitäten/Musizieren",
+      "label_de": "Musizieren",
+      "label_en": "playing music",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "playing music",
+        "a playing music",
+        "a photo of a playing music",
+        "playing music in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "dancing",
+      "tag": "KI/Aktivitäten/Tanzen",
+      "label_de": "Tanzen",
+      "label_en": "dancing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "dancing",
+        "a dancing",
+        "a photo of a dancing",
+        "dancing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "singing",
+      "tag": "KI/Aktivitäten/Singen",
+      "label_de": "Singen",
+      "label_en": "singing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "singing",
+        "a singing",
+        "a photo of a singing",
+        "singing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "football",
+      "tag": "KI/Aktivitäten/Fußball",
+      "label_de": "Fußball",
+      "label_en": "football",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "football",
+        "a football",
+        "a photo of a football",
+        "football in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tennis",
+      "tag": "KI/Aktivitäten/Tennis",
+      "label_de": "Tennis",
+      "label_en": "tennis",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "tennis",
+        "a tennis",
+        "a photo of a tennis",
+        "tennis in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "golf",
+      "tag": "KI/Aktivitäten/Golf",
+      "label_de": "Golf",
+      "label_en": "golf",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "golf",
+        "a golf",
+        "a photo of a golf",
+        "golf in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "basketball",
+      "tag": "KI/Aktivitäten/Basketball",
+      "label_de": "Basketball",
+      "label_en": "basketball",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "basketball",
+        "a basketball",
+        "a photo of a basketball",
+        "basketball in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "volleyball",
+      "tag": "KI/Aktivitäten/Volleyball",
+      "label_de": "Volleyball",
+      "label_en": "volleyball",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "volleyball",
+        "a volleyball",
+        "a photo of a volleyball",
+        "volleyball in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fitness",
+      "tag": "KI/Aktivitäten/Fitness",
+      "label_de": "Fitness",
+      "label_en": "fitness",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "fitness",
+        "a fitness",
+        "a photo of a fitness",
+        "fitness in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "yoga",
+      "tag": "KI/Aktivitäten/Yoga",
+      "label_de": "Yoga",
+      "label_en": "yoga",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "yoga",
+        "a yoga",
+        "a photo of a yoga",
+        "yoga in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "driving",
+      "tag": "KI/Aktivitäten/Autofahren",
+      "label_de": "Autofahren",
+      "label_en": "driving",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "driving",
+        "a driving",
+        "a photo of a driving",
+        "driving in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "motorcycling",
+      "tag": "KI/Aktivitäten/Motorradfahren",
+      "label_de": "Motorradfahren",
+      "label_en": "motorcycling",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "motorcycling",
+        "a motorcycling",
+        "a photo of a motorcycling",
+        "motorcycling in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sightseeing",
+      "tag": "KI/Aktivitäten/Besichtigung",
+      "label_de": "Besichtigung",
+      "label_en": "sightseeing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "sightseeing",
+        "a sightseeing",
+        "a photo of a sightseeing",
+        "sightseeing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "traveling",
+      "tag": "KI/Aktivitäten/Reisen",
+      "label_de": "Reisen",
+      "label_en": "traveling",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "traveling",
+        "a traveling",
+        "a photo of a traveling",
+        "traveling in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "playing",
+      "tag": "KI/Aktivitäten/Spielen",
+      "label_de": "Spielen",
+      "label_en": "playing",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "playing",
+        "a playing",
+        "a photo of a playing",
+        "playing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sleeping",
+      "tag": "KI/Aktivitäten/Schlafen",
+      "label_de": "Schlafen",
+      "label_en": "sleeping",
+      "category": "activities",
+      "parent": "KI/Aktivitäten",
+      "prompts_en": [
+        "sleeping",
+        "a sleeping",
+        "a photo of a sleeping",
+        "sleeping in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "birthday",
+      "tag": "KI/Ereignisse/Geburtstag",
+      "label_de": "Geburtstag",
+      "label_en": "birthday",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "birthday",
+        "a birthday",
+        "a photo of a birthday",
+        "birthday in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "wedding",
+      "tag": "KI/Ereignisse/Hochzeit",
+      "label_de": "Hochzeit",
+      "label_en": "wedding",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "wedding",
+        "a wedding",
+        "a photo of a wedding",
+        "wedding in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "party",
+      "tag": "KI/Ereignisse/Party",
+      "label_de": "Party",
+      "label_en": "party",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "party",
+        "a party",
+        "a photo of a party",
+        "party in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "concert",
+      "tag": "KI/Ereignisse/Konzert",
+      "label_de": "Konzert",
+      "label_en": "concert",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "concert",
+        "a concert",
+        "a photo of a concert",
+        "concert in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "festival",
+      "tag": "KI/Ereignisse/Festival",
+      "label_de": "Festival",
+      "label_en": "festival",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "festival",
+        "a festival",
+        "a photo of a festival",
+        "festival in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "parade",
+      "tag": "KI/Ereignisse/Umzug",
+      "label_de": "Umzug",
+      "label_en": "parade",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "parade",
+        "a parade",
+        "a photo of a parade",
+        "parade in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "conference",
+      "tag": "KI/Ereignisse/Konferenz",
+      "label_de": "Konferenz",
+      "label_en": "conference",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "conference",
+        "a conference",
+        "a photo of a conference",
+        "conference in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "meeting",
+      "tag": "KI/Ereignisse/Besprechung",
+      "label_de": "Besprechung",
+      "label_en": "meeting",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "meeting",
+        "a meeting",
+        "a photo of a meeting",
+        "meeting in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "graduation",
+      "tag": "KI/Ereignisse/Abschlussfeier",
+      "label_de": "Abschlussfeier",
+      "label_en": "graduation",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "graduation",
+        "a graduation",
+        "a photo of a graduation",
+        "graduation in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "funeral",
+      "tag": "KI/Ereignisse/Beerdigung",
+      "label_de": "Beerdigung",
+      "label_en": "funeral",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "funeral",
+        "a funeral",
+        "a photo of a funeral",
+        "funeral in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "christmas",
+      "tag": "KI/Ereignisse/Christmas",
+      "label_de": "Christmas",
+      "label_en": "christmas",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "christmas",
+        "a christmas",
+        "a photo of a christmas",
+        "christmas in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "easter",
+      "tag": "KI/Ereignisse/Easter",
+      "label_de": "Easter",
+      "label_en": "easter",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "easter",
+        "an easter",
+        "a photo of an easter",
+        "easter in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "new_year_celebration",
+      "tag": "KI/Ereignisse/New Year Celebration",
+      "label_de": "New Year Celebration",
+      "label_en": "new year celebration",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "new year celebration",
+        "a new year celebration",
+        "a photo of a new year celebration",
+        "new year celebration in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "halloween",
+      "tag": "KI/Ereignisse/Halloween",
+      "label_de": "Halloween",
+      "label_en": "halloween",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "halloween",
+        "a halloween",
+        "a photo of a halloween",
+        "halloween in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sports_event",
+      "tag": "KI/Ereignisse/Sportveranstaltung",
+      "label_de": "Sportveranstaltung",
+      "label_en": "sports event",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "sports event",
+        "a sports event",
+        "a photo of a sports event",
+        "sports event in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "family_gathering",
+      "tag": "KI/Ereignisse/Familientreffen",
+      "label_de": "Familientreffen",
+      "label_en": "family gathering",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "family gathering",
+        "a family gathering",
+        "a photo of a family gathering",
+        "family gathering in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "ceremony",
+      "tag": "KI/Ereignisse/Zeremonie",
+      "label_de": "Zeremonie",
+      "label_en": "ceremony",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "ceremony",
+        "a ceremony",
+        "a photo of a ceremony",
+        "ceremony in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "protest",
+      "tag": "KI/Ereignisse/Demonstration",
+      "label_de": "Demonstration",
+      "label_en": "protest",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "protest",
+        "a protest",
+        "a photo of a protest",
+        "protest in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fireworks",
+      "tag": "KI/Ereignisse/Feuerwerk",
+      "label_de": "Feuerwerk",
+      "label_en": "fireworks",
+      "category": "events",
+      "parent": "KI/Ereignisse",
+      "prompts_en": [
+        "fireworks",
+        "a fireworks",
+        "a photo of a fireworks",
+        "fireworks in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "food",
+      "tag": "KI/Essen & Trinken/Essen",
+      "label_de": "Essen",
+      "label_en": "food",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "food",
+        "a food",
+        "a photo of a food",
+        "food in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "breakfast",
+      "tag": "KI/Essen & Trinken/Frühstück",
+      "label_de": "Frühstück",
+      "label_en": "breakfast",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "breakfast",
+        "a breakfast",
+        "a photo of a breakfast",
+        "breakfast in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "lunch",
+      "tag": "KI/Essen & Trinken/Mittagessen",
+      "label_de": "Mittagessen",
+      "label_en": "lunch",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "lunch",
+        "a lunch",
+        "a photo of a lunch",
+        "lunch in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "dinner",
+      "tag": "KI/Essen & Trinken/Abendessen",
+      "label_de": "Abendessen",
+      "label_en": "dinner",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "dinner",
+        "a dinner",
+        "a photo of a dinner",
+        "dinner in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bread",
+      "tag": "KI/Essen & Trinken/Brot",
+      "label_de": "Brot",
+      "label_en": "bread",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "bread",
+        "a bread",
+        "a photo of a bread",
+        "bread in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cake",
+      "tag": "KI/Essen & Trinken/Kuchen",
+      "label_de": "Kuchen",
+      "label_en": "cake",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "cake",
+        "a cake",
+        "a photo of a cake",
+        "cake in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "pizza",
+      "tag": "KI/Essen & Trinken/Pizza",
+      "label_de": "Pizza",
+      "label_en": "pizza",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "pizza",
+        "a pizza",
+        "a photo of a pizza",
+        "pizza in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "pasta",
+      "tag": "KI/Essen & Trinken/Pasta",
+      "label_de": "Pasta",
+      "label_en": "pasta",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "pasta",
+        "a pasta",
+        "a photo of a pasta",
+        "pasta in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "burger",
+      "tag": "KI/Essen & Trinken/Burger",
+      "label_de": "Burger",
+      "label_en": "burger",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "burger",
+        "a burger",
+        "a photo of a burger",
+        "burger in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sandwich",
+      "tag": "KI/Essen & Trinken/Sandwich",
+      "label_de": "Sandwich",
+      "label_en": "sandwich",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "sandwich",
+        "a sandwich",
+        "a photo of a sandwich",
+        "sandwich in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "salad",
+      "tag": "KI/Essen & Trinken/Salat",
+      "label_de": "Salat",
+      "label_en": "salad",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "salad",
+        "a salad",
+        "a photo of a salad",
+        "salad in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "soup",
+      "tag": "KI/Essen & Trinken/Suppe",
+      "label_de": "Suppe",
+      "label_en": "soup",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "soup",
+        "a soup",
+        "a photo of a soup",
+        "soup in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "meat",
+      "tag": "KI/Essen & Trinken/Fleisch",
+      "label_de": "Fleisch",
+      "label_en": "meat",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "meat",
+        "a meat",
+        "a photo of a meat",
+        "meat in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "steak",
+      "tag": "KI/Essen & Trinken/Steak",
+      "label_de": "Steak",
+      "label_en": "steak",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "steak",
+        "a steak",
+        "a photo of a steak",
+        "steak in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sausage",
+      "tag": "KI/Essen & Trinken/Wurst",
+      "label_de": "Wurst",
+      "label_en": "sausage",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "sausage",
+        "a sausage",
+        "a photo of a sausage",
+        "sausage in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "chicken_dish",
+      "tag": "KI/Essen & Trinken/Hühnergericht",
+      "label_de": "Hühnergericht",
+      "label_en": "chicken dish",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "chicken dish",
+        "a chicken dish",
+        "a photo of a chicken dish",
+        "chicken dish in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fish_dish",
+      "tag": "KI/Essen & Trinken/Fischgericht",
+      "label_de": "Fischgericht",
+      "label_en": "fish dish",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "fish dish",
+        "a fish dish",
+        "a photo of a fish dish",
+        "fish dish in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "seafood",
+      "tag": "KI/Essen & Trinken/Meeresfrüchte",
+      "label_de": "Meeresfrüchte",
+      "label_en": "seafood",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "seafood",
+        "a seafood",
+        "a photo of a seafood",
+        "seafood in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "vegetables",
+      "tag": "KI/Essen & Trinken/Gemüse",
+      "label_de": "Gemüse",
+      "label_en": "vegetables",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "vegetables",
+        "a vegetables",
+        "a photo of a vegetables",
+        "vegetables in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fruit",
+      "tag": "KI/Essen & Trinken/Obst",
+      "label_de": "Obst",
+      "label_en": "fruit",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "fruit",
+        "a fruit",
+        "a photo of a fruit",
+        "fruit in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "apple",
+      "tag": "KI/Essen & Trinken/Apfel",
+      "label_de": "Apfel",
+      "label_en": "apple",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "apple",
+        "an apple",
+        "a photo of an apple",
+        "apple in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "banana",
+      "tag": "KI/Essen & Trinken/Banane",
+      "label_de": "Banane",
+      "label_en": "banana",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "banana",
+        "a banana",
+        "a photo of a banana",
+        "banana in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "berries",
+      "tag": "KI/Essen & Trinken/Beeren",
+      "label_de": "Beeren",
+      "label_en": "berries",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "berries",
+        "a berries",
+        "a photo of a berries",
+        "berries in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "dessert",
+      "tag": "KI/Essen & Trinken/Dessert",
+      "label_de": "Dessert",
+      "label_en": "dessert",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "dessert",
+        "a dessert",
+        "a photo of a dessert",
+        "dessert in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "ice_cream",
+      "tag": "KI/Essen & Trinken/Eiscreme",
+      "label_de": "Eiscreme",
+      "label_en": "ice cream",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "ice cream",
+        "an ice cream",
+        "a photo of an ice cream",
+        "ice cream in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "chocolate",
+      "tag": "KI/Essen & Trinken/Schokolade",
+      "label_de": "Schokolade",
+      "label_en": "chocolate",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "chocolate",
+        "a chocolate",
+        "a photo of a chocolate",
+        "chocolate in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "coffee",
+      "tag": "KI/Essen & Trinken/Kaffee",
+      "label_de": "Kaffee",
+      "label_en": "coffee",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "coffee",
+        "a coffee",
+        "a photo of a coffee",
+        "coffee in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tea",
+      "tag": "KI/Essen & Trinken/Tee",
+      "label_de": "Tee",
+      "label_en": "tea",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "tea",
+        "a tea",
+        "a photo of a tea",
+        "tea in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "beer",
+      "tag": "KI/Essen & Trinken/Bier",
+      "label_de": "Bier",
+      "label_en": "beer",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "beer",
+        "a beer",
+        "a photo of a beer",
+        "beer in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "wine",
+      "tag": "KI/Essen & Trinken/Wein",
+      "label_de": "Wein",
+      "label_en": "wine",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "wine",
+        "a wine",
+        "a photo of a wine",
+        "wine in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cocktail",
+      "tag": "KI/Essen & Trinken/Cocktail",
+      "label_de": "Cocktail",
+      "label_en": "cocktail",
+      "category": "food",
+      "parent": "KI/Essen & Trinken",
+      "prompts_en": [
+        "cocktail",
+        "a cocktail",
+        "a photo of a cocktail",
+        "cocktail in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "table",
+      "tag": "KI/Objekte/Tisch",
+      "label_de": "Tisch",
+      "label_en": "table",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "table",
+        "a table",
+        "a photo of a table",
+        "table in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "chair",
+      "tag": "KI/Objekte/Stuhl",
+      "label_de": "Stuhl",
+      "label_en": "chair",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "chair",
+        "a chair",
+        "a photo of a chair",
+        "chair in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sofa",
+      "tag": "KI/Objekte/Sofa",
+      "label_de": "Sofa",
+      "label_en": "sofa",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "sofa",
+        "a sofa",
+        "a photo of a sofa",
+        "sofa in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bed",
+      "tag": "KI/Objekte/Bett",
+      "label_de": "Bett",
+      "label_en": "bed",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "bed",
+        "a bed",
+        "a photo of a bed",
+        "bed in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "desk",
+      "tag": "KI/Objekte/Schreibtisch",
+      "label_de": "Schreibtisch",
+      "label_en": "desk",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "desk",
+        "a desk",
+        "a photo of a desk",
+        "desk in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "computer",
+      "tag": "KI/Objekte/Computer",
+      "label_de": "Computer",
+      "label_en": "computer",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "computer",
+        "a computer",
+        "a photo of a computer",
+        "computer in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "laptop",
+      "tag": "KI/Objekte/Laptop",
+      "label_de": "Laptop",
+      "label_en": "laptop",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "laptop",
+        "a laptop",
+        "a photo of a laptop",
+        "laptop in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "keyboard",
+      "tag": "KI/Objekte/Tastatur",
+      "label_de": "Tastatur",
+      "label_en": "keyboard",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "keyboard",
+        "a keyboard",
+        "a photo of a keyboard",
+        "keyboard in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "computer_monitor",
+      "tag": "KI/Objekte/Monitor",
+      "label_de": "Monitor",
+      "label_en": "computer monitor",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "computer monitor",
+        "a computer monitor",
+        "a photo of a computer monitor",
+        "computer monitor in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "television",
+      "tag": "KI/Objekte/Fernseher",
+      "label_de": "Fernseher",
+      "label_en": "television",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "television",
+        "a television",
+        "a photo of a television",
+        "television in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "smartphone",
+      "tag": "KI/Objekte/Smartphone",
+      "label_de": "Smartphone",
+      "label_en": "smartphone",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "smartphone",
+        "a smartphone",
+        "a photo of a smartphone",
+        "smartphone in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "camera",
+      "tag": "KI/Objekte/Kamera",
+      "label_de": "Kamera",
+      "label_en": "camera",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "camera",
+        "a camera",
+        "a photo of a camera",
+        "camera in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "headphones",
+      "tag": "KI/Objekte/Kopfhörer",
+      "label_de": "Kopfhörer",
+      "label_en": "headphones",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "headphones",
+        "a headphones",
+        "a photo of a headphones",
+        "headphones in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "book",
+      "tag": "KI/Objekte/Buch",
+      "label_de": "Buch",
+      "label_en": "book",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "book",
+        "a book",
+        "a photo of a book",
+        "book in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "newspaper",
+      "tag": "KI/Objekte/Zeitung",
+      "label_de": "Zeitung",
+      "label_en": "newspaper",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "newspaper",
+        "a newspaper",
+        "a photo of a newspaper",
+        "newspaper in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bag",
+      "tag": "KI/Objekte/Tasche",
+      "label_de": "Tasche",
+      "label_en": "bag",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "bag",
+        "a bag",
+        "a photo of a bag",
+        "bag in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "backpack",
+      "tag": "KI/Objekte/Rucksack",
+      "label_de": "Rucksack",
+      "label_en": "backpack",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "backpack",
+        "a backpack",
+        "a photo of a backpack",
+        "backpack in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "suitcase",
+      "tag": "KI/Objekte/Koffer",
+      "label_de": "Koffer",
+      "label_en": "suitcase",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "suitcase",
+        "a suitcase",
+        "a photo of a suitcase",
+        "suitcase in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "umbrella",
+      "tag": "KI/Objekte/Regenschirm",
+      "label_de": "Regenschirm",
+      "label_en": "umbrella",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "umbrella",
+        "an umbrella",
+        "a photo of an umbrella",
+        "umbrella in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bottle",
+      "tag": "KI/Objekte/Flasche",
+      "label_de": "Flasche",
+      "label_en": "bottle",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "bottle",
+        "a bottle",
+        "a photo of a bottle",
+        "bottle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cup",
+      "tag": "KI/Objekte/Tasse",
+      "label_de": "Tasse",
+      "label_en": "cup",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "cup",
+        "a cup",
+        "a photo of a cup",
+        "cup in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "glass",
+      "tag": "KI/Objekte/Glas",
+      "label_de": "Glas",
+      "label_en": "glass",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "glass",
+        "a glass",
+        "a photo of a glass",
+        "glass in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "plate",
+      "tag": "KI/Objekte/Teller",
+      "label_de": "Teller",
+      "label_en": "plate",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "plate",
+        "a plate",
+        "a photo of a plate",
+        "plate in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cutlery",
+      "tag": "KI/Objekte/Besteck",
+      "label_de": "Besteck",
+      "label_en": "cutlery",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "cutlery",
+        "a cutlery",
+        "a photo of a cutlery",
+        "cutlery in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "clock",
+      "tag": "KI/Objekte/Uhr",
+      "label_de": "Uhr",
+      "label_en": "clock",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "clock",
+        "a clock",
+        "a photo of a clock",
+        "clock in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "watch",
+      "tag": "KI/Objekte/Armbanduhr",
+      "label_de": "Armbanduhr",
+      "label_en": "watch",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "watch",
+        "a watch",
+        "a photo of a watch",
+        "watch in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "lamp",
+      "tag": "KI/Objekte/Lampe",
+      "label_de": "Lampe",
+      "label_en": "lamp",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "lamp",
+        "a lamp",
+        "a photo of a lamp",
+        "lamp in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "candle",
+      "tag": "KI/Objekte/Kerze",
+      "label_de": "Kerze",
+      "label_en": "candle",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "candle",
+        "a candle",
+        "a photo of a candle",
+        "candle in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "toy",
+      "tag": "KI/Objekte/Spielzeug",
+      "label_de": "Spielzeug",
+      "label_en": "toy",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "toy",
+        "a toy",
+        "a photo of a toy",
+        "toy in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "ball",
+      "tag": "KI/Objekte/Ball",
+      "label_de": "Ball",
+      "label_en": "ball",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "ball",
+        "a ball",
+        "a photo of a ball",
+        "ball in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "musical_instrument",
+      "tag": "KI/Objekte/Musikinstrument",
+      "label_de": "Musikinstrument",
+      "label_en": "musical instrument",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "musical instrument",
+        "a musical instrument",
+        "a photo of a musical instrument",
+        "musical instrument in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "guitar",
+      "tag": "KI/Objekte/Gitarre",
+      "label_de": "Gitarre",
+      "label_en": "guitar",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "guitar",
+        "a guitar",
+        "a photo of a guitar",
+        "guitar in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "piano",
+      "tag": "KI/Objekte/Klavier",
+      "label_de": "Klavier",
+      "label_en": "piano",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "piano",
+        "a piano",
+        "a photo of a piano",
+        "piano in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bicycle_helmet",
+      "tag": "KI/Objekte/Fahrradhelm",
+      "label_de": "Fahrradhelm",
+      "label_en": "bicycle helmet",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "bicycle helmet",
+        "a bicycle helmet",
+        "a photo of a bicycle helmet",
+        "bicycle helmet in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "ski_equipment",
+      "tag": "KI/Objekte/Skiausrüstung",
+      "label_de": "Skiausrüstung",
+      "label_en": "ski equipment",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "ski equipment",
+        "a ski equipment",
+        "a photo of a ski equipment",
+        "ski equipment in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "tools",
+      "tag": "KI/Objekte/Werkzeug",
+      "label_de": "Werkzeug",
+      "label_en": "tools",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "tools",
+        "a tools",
+        "a photo of a tools",
+        "tools in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "machine",
+      "tag": "KI/Objekte/Maschine",
+      "label_de": "Maschine",
+      "label_en": "machine",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "machine",
+        "a machine",
+        "a photo of a machine",
+        "machine in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sign",
+      "tag": "KI/Objekte/Schild",
+      "label_de": "Schild",
+      "label_en": "sign",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "sign",
+        "a sign",
+        "a photo of a sign",
+        "sign in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "traffic_light",
+      "tag": "KI/Objekte/Ampel",
+      "label_de": "Ampel",
+      "label_en": "traffic light",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "traffic light",
+        "a traffic light",
+        "a photo of a traffic light",
+        "traffic light in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "bench",
+      "tag": "KI/Objekte/Bank",
+      "label_de": "Bank",
+      "label_en": "bench",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "bench",
+        "a bench",
+        "a photo of a bench",
+        "bench in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "fountain",
+      "tag": "KI/Objekte/Brunnen",
+      "label_de": "Brunnen",
+      "label_en": "fountain",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "fountain",
+        "a fountain",
+        "a photo of a fountain",
+        "fountain in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "statue",
+      "tag": "KI/Objekte/Statue",
+      "label_de": "Statue",
+      "label_en": "statue",
+      "category": "objects",
+      "parent": "KI/Objekte",
+      "prompts_en": [
+        "statue",
+        "a statue",
+        "a photo of a statue",
+        "statue in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "screenshot",
+      "tag": "KI/Medientypen/Screenshot",
+      "label_de": "Screenshot",
+      "label_en": "screenshot",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "screenshot",
+        "a screenshot",
+        "a photo of a screenshot",
+        "screenshot in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "document",
+      "tag": "KI/Medientypen/Dokument",
+      "label_de": "Dokument",
+      "label_en": "document",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "document",
+        "a document",
+        "a photo of a document",
+        "document in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "receipt",
+      "tag": "KI/Medientypen/Kassenbon",
+      "label_de": "Kassenbon",
+      "label_en": "receipt",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "receipt",
+        "a receipt",
+        "a photo of a receipt",
+        "receipt in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "invoice",
+      "tag": "KI/Medientypen/Rechnung",
+      "label_de": "Rechnung",
+      "label_en": "invoice",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "invoice",
+        "an invoice",
+        "a photo of an invoice",
+        "invoice in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "letter",
+      "tag": "KI/Medientypen/Brief",
+      "label_de": "Brief",
+      "label_en": "letter",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "letter",
+        "a letter",
+        "a photo of a letter",
+        "letter in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "poster",
+      "tag": "KI/Medientypen/Plakat",
+      "label_de": "Plakat",
+      "label_en": "poster",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "poster",
+        "a poster",
+        "a photo of a poster",
+        "poster in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "presentation_slide",
+      "tag": "KI/Medientypen/Präsentationsfolie",
+      "label_de": "Präsentationsfolie",
+      "label_en": "presentation slide",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "presentation slide",
+        "a presentation slide",
+        "a photo of a presentation slide",
+        "presentation slide in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "map",
+      "tag": "KI/Medientypen/Karte",
+      "label_de": "Karte",
+      "label_en": "map",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "map",
+        "a map",
+        "a photo of a map",
+        "map in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "diagram",
+      "tag": "KI/Medientypen/Diagramm",
+      "label_de": "Diagramm",
+      "label_en": "diagram",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "diagram",
+        "a diagram",
+        "a photo of a diagram",
+        "diagram in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "chart",
+      "tag": "KI/Medientypen/Diagramm",
+      "label_de": "Diagramm",
+      "label_en": "chart",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "chart",
+        "a chart",
+        "a photo of a chart",
+        "chart in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "drawing",
+      "tag": "KI/Medientypen/Zeichnung",
+      "label_de": "Zeichnung",
+      "label_en": "drawing",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "drawing",
+        "a drawing",
+        "a photo of a drawing",
+        "drawing in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "painting",
+      "tag": "KI/Medientypen/Gemälde",
+      "label_de": "Gemälde",
+      "label_en": "painting",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "painting",
+        "a painting",
+        "a photo of a painting",
+        "painting in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "illustration",
+      "tag": "KI/Medientypen/Illustration",
+      "label_de": "Illustration",
+      "label_en": "illustration",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "illustration",
+        "an illustration",
+        "a photo of an illustration",
+        "illustration in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cartoon",
+      "tag": "KI/Medientypen/Cartoon",
+      "label_de": "Cartoon",
+      "label_en": "cartoon",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "cartoon",
+        "a cartoon",
+        "a photo of a cartoon",
+        "cartoon in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "meme",
+      "tag": "KI/Medientypen/Meme",
+      "label_de": "Meme",
+      "label_en": "meme",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "meme",
+        "a meme",
+        "a photo of a meme",
+        "meme in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "book_page",
+      "tag": "KI/Medientypen/Buchseite",
+      "label_de": "Buchseite",
+      "label_en": "book page",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "book page",
+        "a book page",
+        "a photo of a book page",
+        "book page in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "newspaper_page",
+      "tag": "KI/Medientypen/Zeitungsseite",
+      "label_de": "Zeitungsseite",
+      "label_en": "newspaper page",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "newspaper page",
+        "a newspaper page",
+        "a photo of a newspaper page",
+        "newspaper page in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "computer_screen",
+      "tag": "KI/Medientypen/Computerbildschirm",
+      "label_de": "Computerbildschirm",
+      "label_en": "computer screen",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "computer screen",
+        "a computer screen",
+        "a photo of a computer screen",
+        "computer screen in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "phone_screen",
+      "tag": "KI/Medientypen/Handybildschirm",
+      "label_de": "Handybildschirm",
+      "label_en": "phone screen",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "phone screen",
+        "a phone screen",
+        "a photo of a phone screen",
+        "phone screen in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "qr_code",
+      "tag": "KI/Medientypen/Qr Code",
+      "label_de": "Qr Code",
+      "label_en": "qr code",
+      "category": "media",
+      "parent": "KI/Medientypen",
+      "prompts_en": [
+        "qr code",
+        "a qr code",
+        "a photo of a qr code",
+        "qr code in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "night_photo",
+      "tag": "KI/Bildmerkmale/Nachtaufnahme",
+      "label_de": "Nachtaufnahme",
+      "label_en": "night photo",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "night photo",
+        "a night photo",
+        "a photo of a night photo",
+        "night photo in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "daytime",
+      "tag": "KI/Bildmerkmale/Tageslicht",
+      "label_de": "Tageslicht",
+      "label_en": "daytime",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "daytime",
+        "a daytime",
+        "a photo of a daytime",
+        "daytime in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "indoor",
+      "tag": "KI/Bildmerkmale/Innenaufnahme",
+      "label_de": "Innenaufnahme",
+      "label_en": "indoor",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "indoor",
+        "an indoor",
+        "a photo of an indoor",
+        "indoor in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "outdoor",
+      "tag": "KI/Bildmerkmale/Außenaufnahme",
+      "label_de": "Außenaufnahme",
+      "label_en": "outdoor",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "outdoor",
+        "an outdoor",
+        "a photo of an outdoor",
+        "outdoor in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "close_up",
+      "tag": "KI/Bildmerkmale/Close Up",
+      "label_de": "Close Up",
+      "label_en": "close up",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "close up",
+        "a close up",
+        "a photo of a close up",
+        "close up in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "macro_photo",
+      "tag": "KI/Bildmerkmale/Makroaufnahme",
+      "label_de": "Makroaufnahme",
+      "label_en": "macro photo",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "macro photo",
+        "a macro photo",
+        "a photo of a macro photo",
+        "macro photo in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "aerial_view",
+      "tag": "KI/Bildmerkmale/Luftaufnahme",
+      "label_de": "Luftaufnahme",
+      "label_en": "aerial view",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "aerial view",
+        "an aerial view",
+        "a photo of an aerial view",
+        "aerial view in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "panorama",
+      "tag": "KI/Bildmerkmale/Panorama",
+      "label_de": "Panorama",
+      "label_en": "panorama",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "panorama",
+        "a panorama",
+        "a photo of a panorama",
+        "panorama in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "landscape_photo",
+      "tag": "KI/Bildmerkmale/Landschaftsaufnahme",
+      "label_de": "Landschaftsaufnahme",
+      "label_en": "landscape photo",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "landscape photo",
+        "a landscape photo",
+        "a photo of a landscape photo",
+        "landscape photo in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "black_and_white_photo",
+      "tag": "KI/Bildmerkmale/Schwarzweißfoto",
+      "label_de": "Schwarzweißfoto",
+      "label_en": "black and white photo",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "black and white photo",
+        "a black and white photo",
+        "a photo of a black and white photo",
+        "black and white photo in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "blurred_photo",
+      "tag": "KI/Bildmerkmale/Unscharfes Foto",
+      "label_de": "Unscharfes Foto",
+      "label_en": "blurred photo",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "blurred photo",
+        "a blurred photo",
+        "a photo of a blurred photo",
+        "blurred photo in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "low_light",
+      "tag": "KI/Bildmerkmale/Schwaches Licht",
+      "label_de": "Schwaches Licht",
+      "label_en": "low light",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "low light",
+        "a low light",
+        "a photo of a low light",
+        "low light in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "silhouette",
+      "tag": "KI/Bildmerkmale/Silhouette",
+      "label_de": "Silhouette",
+      "label_en": "silhouette",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "silhouette",
+        "a silhouette",
+        "a photo of a silhouette",
+        "silhouette in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "reflection",
+      "tag": "KI/Bildmerkmale/Spiegelung",
+      "label_de": "Spiegelung",
+      "label_en": "reflection",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "reflection",
+        "a reflection",
+        "a photo of a reflection",
+        "reflection in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "architecture",
+      "tag": "KI/Bildmerkmale/Architektur",
+      "label_de": "Architektur",
+      "label_en": "architecture",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "architecture",
+        "an architecture",
+        "a photo of an architecture",
+        "architecture in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "modern_architecture",
+      "tag": "KI/Bildmerkmale/Moderne Architektur",
+      "label_de": "Moderne Architektur",
+      "label_en": "modern architecture",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "modern architecture",
+        "a modern architecture",
+        "a photo of a modern architecture",
+        "modern architecture in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "historic_architecture",
+      "tag": "KI/Bildmerkmale/Historische Architektur",
+      "label_de": "Historische Architektur",
+      "label_en": "historic architecture",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "historic architecture",
+        "a historic architecture",
+        "a photo of a historic architecture",
+        "historic architecture in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "street_photography",
+      "tag": "KI/Bildmerkmale/Straßenfotografie",
+      "label_de": "Straßenfotografie",
+      "label_en": "street photography",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "street photography",
+        "a street photography",
+        "a photo of a street photography",
+        "street photography in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "food_photography",
+      "tag": "KI/Bildmerkmale/Food-Fotografie",
+      "label_de": "Food-Fotografie",
+      "label_en": "food photography",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "food photography",
+        "a food photography",
+        "a photo of a food photography",
+        "food photography in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "wildlife_photography",
+      "tag": "KI/Bildmerkmale/Tierfotografie",
+      "label_de": "Tierfotografie",
+      "label_en": "wildlife photography",
+      "category": "visual",
+      "parent": "KI/Bildmerkmale",
+      "prompts_en": [
+        "wildlife photography",
+        "a wildlife photography",
+        "a photo of a wildlife photography",
+        "wildlife photography in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "sunny_weather",
+      "tag": "KI/Wetter & Jahreszeiten/Sonnig",
+      "label_de": "Sonnig",
+      "label_en": "sunny weather",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "sunny weather",
+        "a sunny weather",
+        "a photo of a sunny weather",
+        "sunny weather in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "cloudy_weather",
+      "tag": "KI/Wetter & Jahreszeiten/Bewölkt",
+      "label_de": "Bewölkt",
+      "label_en": "cloudy weather",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "cloudy weather",
+        "a cloudy weather",
+        "a photo of a cloudy weather",
+        "cloudy weather in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "rainy_weather",
+      "tag": "KI/Wetter & Jahreszeiten/Regnerisch",
+      "label_de": "Regnerisch",
+      "label_en": "rainy weather",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "rainy weather",
+        "a rainy weather",
+        "a photo of a rainy weather",
+        "rainy weather in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "snowy_weather",
+      "tag": "KI/Wetter & Jahreszeiten/Schneefall",
+      "label_de": "Schneefall",
+      "label_en": "snowy weather",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "snowy weather",
+        "a snowy weather",
+        "a photo of a snowy weather",
+        "snowy weather in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "stormy_weather",
+      "tag": "KI/Wetter & Jahreszeiten/Stürmisch",
+      "label_de": "Stürmisch",
+      "label_en": "stormy weather",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "stormy weather",
+        "a stormy weather",
+        "a photo of a stormy weather",
+        "stormy weather in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "winter",
+      "tag": "KI/Wetter & Jahreszeiten/Winter",
+      "label_de": "Winter",
+      "label_en": "winter",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "winter",
+        "a winter",
+        "a photo of a winter",
+        "winter in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "spring",
+      "tag": "KI/Wetter & Jahreszeiten/Frühling",
+      "label_de": "Frühling",
+      "label_en": "spring",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "spring",
+        "a spring",
+        "a photo of a spring",
+        "spring in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "summer",
+      "tag": "KI/Wetter & Jahreszeiten/Sommer",
+      "label_de": "Sommer",
+      "label_en": "summer",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "summer",
+        "a summer",
+        "a photo of a summer",
+        "summer in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "autumn",
+      "tag": "KI/Wetter & Jahreszeiten/Herbst",
+      "label_de": "Herbst",
+      "label_en": "autumn",
+      "category": "weather_seasons",
+      "parent": "KI/Wetter & Jahreszeiten",
+      "prompts_en": [
+        "autumn",
+        "an autumn",
+        "a photo of an autumn",
+        "autumn in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "pet",
+      "tag": "KI/Sonstiges/Pet",
+      "label_de": "Pet",
+      "label_en": "pet",
+      "category": "misc",
+      "parent": "KI/Sonstiges",
+      "prompts_en": [
+        "pet",
+        "a pet",
+        "a photo of a pet",
+        "pet in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    },
+    {
+      "id": "wild_animal",
+      "tag": "KI/Sonstiges/Wild Animal",
+      "label_de": "Wild Animal",
+      "label_en": "wild animal",
+      "category": "misc",
+      "parent": "KI/Sonstiges",
+      "prompts_en": [
+        "wild animal",
+        "a wild animal",
+        "a photo of a wild animal",
+        "wild animal in a photograph"
+      ],
+      "prompt_aggregation": "top2_mean",
+      "threshold": null,
+      "enabled": true
+    }
+  ]
+}

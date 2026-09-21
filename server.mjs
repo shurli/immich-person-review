@@ -9,6 +9,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
 const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const appVersion = packageInfo.version || 'unknown';
+const tagTaxonomyPath = path.resolve(process.env.TAG_TAXONOMY_PATH || path.join(__dirname, 'data', 'tags.json'));
+const tagTaxonomyBackupPath = `${tagTaxonomyPath}.bak`;
 const port = Number(process.env.PORT || 3000);
 const immichUrl = (process.env.IMMICH_URL || '').replace(/\/$/, '');
 const immichExternalUrl = (process.env.IMMICH_EXTERNAL_URL || immichUrl).replace(/\/$/, '');
@@ -441,6 +443,62 @@ async function parseBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
+function normalizeTagPath(value) {
+  return String(value || '').split('/').map((part) => part.trim()).filter(Boolean).join('/');
+}
+
+function validateTagTaxonomy(document) {
+  if (!document || typeof document !== 'object' || Array.isArray(document)) throw new Error('Tag-JSON muss ein Objekt sein.');
+  if (!Array.isArray(document.concepts)) throw new Error('Tag-JSON benötigt ein concepts-Array.');
+  const ids = new Set();
+  const tags = new Set();
+  for (const [index, concept] of document.concepts.entries()) {
+    if (!concept || typeof concept !== 'object') throw new Error(`concepts[${index}] ist ungültig.`);
+    const id = String(concept.id || '').trim();
+    const tag = normalizeTagPath(concept.tag);
+    if (!id) throw new Error(`concepts[${index}] hat keine id.`);
+    if (!tag) throw new Error(`concepts[${index}] hat keinen tag-Pfad.`);
+    if (ids.has(id)) throw new Error(`Doppelte Tag-ID: ${id}`);
+    if (tags.has(tag.toLocaleLowerCase('de'))) throw new Error(`Doppelter Tag-Pfad: ${tag}`);
+    ids.add(id);
+    tags.add(tag.toLocaleLowerCase('de'));
+    if (concept.prompts_en != null && !Array.isArray(concept.prompts_en)) throw new Error(`${id}: prompts_en muss ein Array sein.`);
+  }
+  if (document.folders != null) {
+    if (!Array.isArray(document.folders)) throw new Error('folders muss ein Array sein.');
+    const folders = new Set();
+    for (const raw of document.folders) {
+      const folder = normalizeTagPath(typeof raw === 'string' ? raw : raw?.path);
+      if (!folder) throw new Error('Leerer Ordnerpfad in folders.');
+      const key = folder.toLocaleLowerCase('de');
+      if (folders.has(key)) throw new Error(`Doppelter Ordnerpfad: ${folder}`);
+      folders.add(key);
+    }
+  }
+  return true;
+}
+
+function readTagTaxonomy() {
+  if (!fs.existsSync(tagTaxonomyPath)) {
+    return { schema_version: 2, taxonomy_version: 'custom-v1', tag_language: 'de', prompt_language: 'en', folders: ['KI'], concepts: [] };
+  }
+  const document = JSON.parse(fs.readFileSync(tagTaxonomyPath, 'utf8'));
+  validateTagTaxonomy(document);
+  return document;
+}
+
+function writeTagTaxonomy(document) {
+  validateTagTaxonomy(document);
+  document.concept_count = document.concepts.length;
+  document.updated_at = new Date().toISOString();
+  fs.mkdirSync(path.dirname(tagTaxonomyPath), { recursive: true });
+  if (fs.existsSync(tagTaxonomyPath)) fs.copyFileSync(tagTaxonomyPath, tagTaxonomyBackupPath);
+  const tmp = `${tagTaxonomyPath}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(document, null, 2)}\n`, 'utf8');
+  fs.renameSync(tmp, tagTaxonomyPath);
+  return document;
+}
+
 async function proxyJson(res, response) {
   const text = await response.text();
   if (response.status === 204 || !text) {
@@ -697,6 +755,27 @@ async function handleApi(req, res, url) {
     }
 
 
+
+
+    if (req.method === 'GET' && url.pathname === '/review-api/tags') {
+      try {
+        const document = readTagTaxonomy();
+        return json(res, 200, { document, path: tagTaxonomyPath, writable: true });
+      } catch (error) {
+        return json(res, 500, { message: `Tag-JSON konnte nicht gelesen werden: ${error.message}` });
+      }
+    }
+
+    if (req.method === 'PUT' && url.pathname === '/review-api/tags') {
+      try {
+        const body = await parseBody(req);
+        const document = body.document ?? body;
+        const saved = writeTagTaxonomy(document);
+        return json(res, 200, { ok: true, document: saved, path: tagTaxonomyPath });
+      } catch (error) {
+        return json(res, 400, { message: `Tag-JSON konnte nicht gespeichert werden: ${error.message}` });
+      }
+    }
 
     if (req.method === 'POST' && url.pathname === '/review-api/maintenance/duplicate-person-faces/scan') {
       try {

@@ -278,3 +278,10 @@ npm install
 npm test
 npm start
 ```
+
+
+## KI-Tag-Taxonomie verwalten
+
+Ab Version 0.11.0 gibt es im Hauptbereich den Reiter **KI-Tags**. Dort wird die JSON-Taxonomie als Baum dargestellt. Tags und Kategorien können angelegt, bearbeitet, kopiert, gelöscht und per Drag & Drop zwischen Kategorien verschoben werden. Änderungen werden erst mit **JSON speichern** persistiert. Vor jedem Speichern wird neben der JSON-Datei eine `.bak`-Sicherung angelegt.
+
+Standardmäßig liegt die Datei unter `data/tags.json`. Mit `TAG_TAXONOMY_PATH` kann ein anderer Pfad gesetzt werden. Das mitgelieferte `docker-compose.yml` bindet `/app/data` als benanntes Volume `tag-taxonomy` ein, damit Änderungen Container-Neustarts und Neuaufbau überleben.
