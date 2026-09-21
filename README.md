@@ -115,3 +115,8 @@ Der Browser kennt den Immich API-Key nicht. Bilder werden ebenfalls über den Re
 - Der Face-Datensatz bleibt bestehen, nur die Personenzuordnung wird gelöst. Dafür braucht der API-Key zusätzlich `person.create`, `face.update` und `person.delete`.
 - Leere `204 No Content`-Antworten werden sauber behandelt; dadurch gibt es beim **Markierung entfernen** keinen JSON-Parse-Fehler mehr.
 - `docker-compose.yml` liest `IMMICH_URL` und `IMMICH_API_KEY` direkt aus `.env`.
+
+
+## v0.4.2
+
+Die Personen-Timeline filtert nicht mehr auf Bilder. Es werden alle von Immich fuer die Person gefundenen Assets (insbesondere Bilder und Videos) paginiert geladen. Videos werden in der Review-Ansicht ueber ihr Immich-Thumbnail dargestellt; Face-Pruefung und Zuordnungsaktionen funktionieren identisch.

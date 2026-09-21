@@ -140,7 +140,7 @@ async function selectPerson(id) {
   $('#chooser').classList.add('hidden');
   $('#review').classList.remove('hidden');
   resetReviewState();
-  $('#timeline').innerHTML = '<div class="panel loading initial-loading">Erste Fotos werden geladen…</div>';
+  $('#timeline').innerHTML = '<div class="panel loading initial-loading">Erste Assets werden geladen…</div>';
 
   try {
     state.person = await api(`/review-api/people/${id}`);
@@ -167,8 +167,8 @@ function updateBatchButton() {
 function updatePersonMeta() {
   if (!state.person) return;
   const parts = [state.person.birthDate ? `Geburtsdatum ${fmtDate(state.person.birthDate)}` : 'Kein Geburtsdatum – Alter kann nicht berechnet werden'];
-  if (state.total != null) parts.push(`${state.total} Fotos`);
-  else if (state.assets.length) parts.push(`${state.assets.length}${state.nextPage ? '+' : ''} Fotos geladen`);
+  if (state.total != null) parts.push(`${state.total} Assets`);
+  else if (state.assets.length) parts.push(`${state.assets.length}${state.nextPage ? '+' : ''} Assets geladen`);
   $('#selectedPersonMeta').textContent = parts.join(' · ');
 }
 
@@ -210,8 +210,8 @@ async function loadNextPage() {
 
     if (state.assets.length === 0 && state.nextPage == null) $('#empty').classList.remove('hidden');
     $('#pageStatus').textContent = state.nextPage == null
-      ? (state.assets.length ? `Alle ${state.assets.length} Fotos geladen` : '')
-      : `${state.assets.length}${state.total != null ? ` von ${state.total}` : ''} Fotos geladen`;
+      ? (state.assets.length ? `Alle ${state.assets.length} Assets geladen` : '')
+      : `${state.assets.length}${state.total != null ? ` von ${state.total}` : ''} Assets geladen`;
     $('#loadMoreBtn').classList.toggle('hidden', state.nextPage == null);
   } catch (e) {
     if (token !== state.requestToken) return;
@@ -236,7 +236,7 @@ function appendTimeline(items) {
     const taken = asset.fileCreatedAt || asset.localDateTime || asset.createdAt;
     const beforeBirth = isBeforeBirth(state.person.birthDate, taken);
     card.dataset.beforeBirth = beforeBirth ? 'true' : 'false';
-    card.innerHTML = `<div class="full-wrap"><img class="full-photo" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Foto')}"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><button class="btn detach detach-face" disabled>Zuordnung lösen</button><button class="btn remove remove-face" disabled>Markierung entfernen</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
+    card.innerHTML = `<div class="full-wrap"><img class="full-photo" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Asset')}"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}${asset.type ? ` · ${esc(asset.type === 'VIDEO' ? 'Video' : asset.type === 'IMAGE' ? 'Bild' : asset.type)}` : ''}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><button class="btn detach detach-face" disabled>Zuordnung lösen</button><button class="btn remove remove-face" disabled>Markierung entfernen</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
     tl.appendChild(card);
     faceObserver.observe(card);
   }
@@ -479,7 +479,7 @@ async function runBatchBeforeBirth() {
       toast('Keine Zuordnungen vor der Geburt gefunden.');
       return;
     }
-    if (!window.confirm(`${assets.length} Foto${assets.length === 1 ? '' : 's'} liegen vor dem Geburtsdatum. Die Face-Markierungen bleiben erhalten; nur die Zuordnung zu ${state.person.name || 'dieser Person'} wird gelöst. Fortfahren?`)) return;
+    if (!window.confirm(`${assets.length} Asset${assets.length === 1 ? '' : 's'} liegen vor dem Geburtsdatum. Die Face-Markierungen bleiben erhalten; nur die Zuordnung zu ${state.person.name || 'dieser Person'} wird gelöst. Fortfahren?`)) return;
 
     let done = 0;
     let detached = 0;

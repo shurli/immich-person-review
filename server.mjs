@@ -114,7 +114,6 @@ async function handleApi(req, res, url) {
         order: 'asc',
         withPeople: false,
         withExif: false,
-        type: 'IMAGE',
       };
       if (takenBefore) searchBody.takenBefore = takenBefore;
 
