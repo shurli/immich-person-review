@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund --ignore-scripts
 
-COPY --chown=node:node server.mjs cluster-math.mjs ./
+COPY --chown=node:node server.mjs cluster-math.mjs tag-calibration.mjs ./
 COPY --chown=node:node public ./public
 COPY --chown=node:node data ./data
 
