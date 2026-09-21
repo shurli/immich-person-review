@@ -99,6 +99,8 @@ async function getUnnamedPersonStats(personId) {
   const assets = await collectPersonAssets(personId);
   const days = new Set(assets.map(assetDay).filter(Boolean));
   let faces = 0;
+  let bestFaceAssetId = null;
+  let bestFacePixels = -1;
   let cursor = 0;
   const workers = Array.from({ length: Math.min(8, Math.max(1, assets.length)) }, async () => {
     while (cursor < assets.length) {
@@ -106,11 +108,21 @@ async function getUnnamedPersonStats(personId) {
       const r = await immichFetch(`/faces?id=${encodeURIComponent(asset.id)}`);
       if (!r.ok) continue;
       const list = await r.json();
-      faces += list.filter((face) => face.person?.id === personId || face.personId === personId).length;
+      const matching = list.filter((face) => face.person?.id === personId || face.personId === personId);
+      faces += matching.length;
+      for (const face of matching) {
+        const width = Math.max(0, Number(face.boundingBoxX2) - Number(face.boundingBoxX1));
+        const height = Math.max(0, Number(face.boundingBoxY2) - Number(face.boundingBoxY1));
+        const pixels = width * height;
+        if (Number.isFinite(pixels) && pixels > bestFacePixels) {
+          bestFacePixels = pixels;
+          bestFaceAssetId = asset.id;
+        }
+      }
     }
   });
   await Promise.all(workers);
-  const data = { faces, days: days.size, assets: assets.length };
+  const data = { faces, days: days.size, assets: assets.length, bestFaceAssetId, bestFacePixels: Math.max(0, bestFacePixels) };
   unnamedStatsCache.set(personId, { at: Date.now(), data });
   return data;
 }
@@ -164,6 +176,30 @@ async function handleApi(req, res, url) {
         if (error.response) return proxyJson(res, error.response);
         throw error;
       }
+    }
+
+    const refreshPersonThumbMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/refresh-thumbnail$/i);
+    if (req.method === 'POST' && refreshPersonThumbMatch) {
+      const id = refreshPersonThumbMatch[1];
+      let stats;
+      try {
+        stats = await getUnnamedPersonStats(id);
+      } catch (error) {
+        if (error.response) return proxyJson(res, error.response);
+        throw error;
+      }
+      if (!stats.bestFaceAssetId) return json(res, 404, { message: 'Kein zugeordnetes Face für diese Person gefunden' });
+
+      // featureFaceAssetId is the official Immich API field for selecting the person's feature thumbnail.
+      // As of the current API it is exposed on PUT /people/{id}.
+      const r = await immichFetch(`/people/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ featureFaceAssetId: stats.bestFaceAssetId }),
+      });
+      if (!r.ok) return proxyJson(res, r);
+      unnamedStatsCache.delete(id);
+      const result = await r.json();
+      return json(res, 200, { ok: true, person: result, assetId: stats.bestFaceAssetId, facePixels: stats.bestFacePixels });
     }
 
     const hidePersonMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/hide$/i);

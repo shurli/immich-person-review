@@ -14,6 +14,7 @@ const state = {
   requestToken: 0,
   unnamed: [],
   mergeSource: null,
+  immichUrl: '',
 };
 
 let faceObserver;
@@ -79,13 +80,16 @@ function ageAt(birth, taken) {
   return `${y} Jahre`;
 }
 
-function thumbPerson(id) { return `/review-api/people/${id}/thumbnail`; }
+function thumbPerson(id, bust = '') { return `/review-api/people/${id}/thumbnail${bust ? `?v=${encodeURIComponent(bust)}` : ''}`; }
 function thumbAsset(id) { return `/review-api/assets/${id}/thumbnail?size=preview`; }
+function immichPersonUrl(id) { return state.immichUrl ? `${state.immichUrl}/people/${encodeURIComponent(id)}` : '#'; }
+function openImmichPerson(id) { if (state.immichUrl) window.open(immichPersonUrl(id), '_blank', 'noopener,noreferrer'); }
 
 async function init() {
   try {
     const s = await api('/review-api/status');
     $('#appVersion').textContent = s.version ? `v${s.version}` : 'v?';
+    state.immichUrl = String(s.immichUrl || '').replace(/\/$/, '');
     $('#status').textContent = `Verbunden · ${s.keyName}`;
     $('#status').className = 'status ok';
   } catch (e) {
@@ -117,8 +121,9 @@ async function loadPeople() {
 }
 
 function renderPeople(people) {
-  $('#people').innerHTML = people.map((p) => `<button class="person-card" data-person="${p.id}"><img class="person-avatar" loading="lazy" src="${thumbPerson(p.id)}" alt=""><div class="person-name">${esc(p.name || 'Unbenannt')}</div><div class="muted">${p.birthDate ? `geb. ${fmtDate(p.birthDate)}` : 'kein Geburtsdatum'}</div></button>`).join('') || '<div class="muted">Keine Personen.</div>';
+  $('#people').innerHTML = people.map((p) => `<button class="person-card" data-person="${p.id}"><img class="person-avatar immich-person-link" data-open-immich-person="${p.id}" loading="lazy" src="${thumbPerson(p.id)}" alt="In Immich öffnen" title="In Immich öffnen"><div class="person-name">${esc(p.name || 'Unbenannt')}</div><div class="muted">${p.birthDate ? `geb. ${fmtDate(p.birthDate)}` : 'kein Geburtsdatum'}</div></button>`).join('') || '<div class="muted">Keine Personen.</div>';
   document.querySelectorAll('[data-person]').forEach((b) => { b.onclick = () => selectPerson(b.dataset.person); });
+  document.querySelectorAll('[data-open-immich-person]').forEach((img) => { img.onclick = (e) => { e.stopPropagation(); openImmichPerson(img.dataset.openImmichPerson); }; });
 }
 
 $('#personSearch').addEventListener('input', (e) => {
@@ -150,12 +155,13 @@ function initUnnamedObserver() {
 function renderUnnamedPeople() {
   state.unnamed = state.people.filter((p) => !String(p.name || '').trim() && !p.isHidden);
   $('#unnamedCount').textContent = `${state.unnamed.length} unbenannte Personen`;
-  $('#unnamedPeople').innerHTML = state.unnamed.map((p, i) => `<article class="unnamed-card" data-unnamed-person="${p.id}"><img src="${thumbPerson(p.id)}" loading="lazy" alt="Unbenannte Person"><div class="unnamed-card-body"><div class="unnamed-label">Unbenannte Person ${i + 1}</div><div class="unnamed-stats"><div class="stat-pill"><strong class="face-count">…</strong><span>Faces</span></div><div class="stat-pill"><strong class="day-count">…</strong><span>Aufnahmetage</span></div></div><div class="stats-state muted">Kennzahlen werden geladen…</div><div class="unnamed-actions"><button class="btn hide-person" type="button">Verstecken</button><button class="btn merge-person" type="button">Zusammenführen</button></div><div class="person-id">${esc(p.id)}</div></div></article>`).join('') || '<div class="muted">Keine sichtbaren unbenannten Personen gefunden.</div>';
+  $('#unnamedPeople').innerHTML = state.unnamed.map((p, i) => `<article class="unnamed-card" data-unnamed-person="${p.id}"><img class="immich-person-link" data-unnamed-open-immich="${p.id}" src="${thumbPerson(p.id)}" loading="lazy" alt="Unbenannte Person in Immich öffnen" title="In Immich öffnen"><div class="unnamed-card-body"><div class="unnamed-label">Unbenannte Person ${i + 1}</div><div class="unnamed-stats"><div class="stat-pill"><strong class="face-count">…</strong><span>Faces</span></div><div class="stat-pill"><strong class="day-count">…</strong><span>Aufnahmetage</span></div></div><div class="stats-state muted">Kennzahlen werden geladen…</div><div class="unnamed-actions"><button class="btn hide-person" type="button">Verstecken</button><button class="btn merge-person" type="button">Zusammenführen</button></div><div class="person-id">${esc(p.id)}</div></div></article>`).join('') || '<div class="muted">Keine sichtbaren unbenannten Personen gefunden.</div>';
   initUnnamedObserver();
   document.querySelectorAll('[data-unnamed-person]').forEach((card) => {
     unnamedStatsObserver.observe(card);
     card.querySelector('.hide-person').onclick = () => hideUnnamedPerson(card.dataset.unnamedPerson, card);
     card.querySelector('.merge-person').onclick = () => openMergeDialog(card.dataset.unnamedPerson);
+    card.querySelector('[data-unnamed-open-immich]').onclick = () => openImmichPerson(card.dataset.unnamedPerson);
   });
 }
 
@@ -223,8 +229,48 @@ async function mergeUnnamedPerson(targetPersonId) {
   }
 }
 
+async function refreshUnnamedThumbnails() {
+  const button = $('#refreshUnnamedThumbsBtn');
+  const people = state.people.filter((p) => !String(p.name || '').trim() && !p.isHidden);
+  if (!people.length) return toast('Keine unbenannten Personen vorhanden');
+  if (!confirm(`Für ${people.length} unbenannte Personen jeweils das Face mit der höchsten Pixelauflösung als Thumbnail setzen?`)) return;
+
+  button.disabled = true;
+  const original = button.textContent;
+  let done = 0;
+  let changed = 0;
+  let failed = 0;
+  let cursor = 0;
+  const updateProgress = () => { button.textContent = `Thumbnails ${done}/${people.length}`; };
+  updateProgress();
+
+  const workers = Array.from({ length: Math.min(4, people.length) }, async () => {
+    while (cursor < people.length) {
+      const person = people[cursor++];
+      try {
+        await api(`/review-api/people/${person.id}/refresh-thumbnail`, { method: 'POST', body: '{}' });
+        changed++;
+        const cardImg = document.querySelector(`[data-unnamed-person="${person.id}"] img`);
+        if (cardImg) cardImg.src = thumbPerson(person.id, Date.now());
+      } catch (e) {
+        failed++;
+        console.error(`Thumbnail ${person.id}:`, e);
+      } finally {
+        done++;
+        updateProgress();
+      }
+    }
+  });
+
+  await Promise.all(workers);
+  button.disabled = false;
+  button.textContent = original;
+  toast(`Thumbnail-Batch fertig: ${changed} aktualisiert${failed ? `, ${failed} Fehler` : ''}`);
+}
+
 $('#reviewTab').onclick = () => setChooserView('review');
 $('#unnamedTab').onclick = () => setChooserView('unnamed');
+$('#refreshUnnamedThumbsBtn').onclick = refreshUnnamedThumbnails;
 $('#closeMergeDialog').onclick = () => $('#mergeDialog').close();
 $('#mergeTargetSearch').addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase();
@@ -257,6 +303,9 @@ async function selectPerson(id) {
     state.person = await api(`/review-api/people/${id}`);
     $('#selectedPersonName').textContent = state.person.name || 'Unbenannt';
     $('#selectedPersonThumb').src = thumbPerson(id);
+    $('#selectedPersonThumb').classList.add('immich-person-link');
+    $('#selectedPersonThumb').title = 'In Immich öffnen';
+    $('#selectedPersonThumb').onclick = () => openImmichPerson(id);
     updatePersonMeta();
     updateBatchButton();
     $('#timeline').innerHTML = '';
