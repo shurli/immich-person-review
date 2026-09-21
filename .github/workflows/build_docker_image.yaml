@@ -1,0 +1,61 @@
+name: Build and Publish Docker Image
+
+# Der Workflow startet bei jedem Push in den "main"-Branch
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+# Definiert die Umgebungsvariablen
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    
+    # WICHTIG: Erlaubt GitHub Actions, Pakete (Images) hochzuladen
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: App-Version aus package.json lesen
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Docker image version: $VERSION"
+
+      - name: Login in die GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }} # Dieses Token wird von GitHub automatisch generiert!
+
+      - name: Metadaten (Tags, Labels) extrahieren
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Version kommt aus package.json, z. B. 0.3.2.
+          # Dadurch entstehen 0.3.2, 0.3, latest und sha-<commit>.
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha
+
+      - name: Docker Image bauen und pushen
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
