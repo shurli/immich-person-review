@@ -50,11 +50,16 @@ function fmtDate(d) {
   return new Intl.DateTimeFormat('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(d));
 }
 
+function isBeforeBirth(birth, taken) {
+  if (!birth || !taken) return false;
+  return new Date(taken) < new Date(`${birth}T00:00:00`);
+}
+
 function ageAt(birth, taken) {
   if (!birth) return 'Alter unbekannt';
   const b = new Date(`${birth}T00:00:00`);
   const t = new Date(taken);
-  if (t < b) return 'vor Geburt?';
+  if (isBeforeBirth(birth, taken)) return 'vor Geburt?';
   let y = t.getFullYear() - b.getFullYear();
   let m = t.getMonth() - b.getMonth();
   const day = t.getDate() - b.getDate();
@@ -135,12 +140,21 @@ async function selectPerson(id) {
     $('#selectedPersonName').textContent = state.person.name || 'Unbenannt';
     $('#selectedPersonThumb').src = thumbPerson(id);
     updatePersonMeta();
+    updateBatchButton();
     $('#timeline').innerHTML = '';
     initObservers();
     await loadNextPage();
   } catch (e) {
     $('#timeline').innerHTML = `<div class="panel error">${esc(e.message)}</div>`;
   }
+}
+
+function updateBatchButton() {
+  const button = $('#batchBeforeBirthBtn');
+  const hasBirthDate = Boolean(state.person?.birthDate);
+  button.classList.toggle('hidden', !hasBirthDate);
+  button.disabled = !hasBirthDate;
+  if (!button.dataset.running) button.textContent = 'Alle „vor Geburt“ entfernen';
 }
 
 function updatePersonMeta() {
@@ -213,7 +227,9 @@ function appendTimeline(items) {
     card.dataset.asset = asset.id;
     card._asset = asset;
     const taken = asset.fileCreatedAt || asset.localDateTime || asset.createdAt;
-    card.innerHTML = `<div class="full-wrap"><img class="full-photo" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Foto')}"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
+    const beforeBirth = isBeforeBirth(state.person.birthDate, taken);
+    card.dataset.beforeBirth = beforeBirth ? 'true' : 'false';
+    card.innerHTML = `<div class="full-wrap"><img class="full-photo" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Foto')}"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><button class="btn remove remove-face" disabled>Markierung entfernen</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
     tl.appendChild(card);
     faceObserver.observe(card);
   }
@@ -245,6 +261,9 @@ async function loadFaceForCard(card, asset) {
     const button = card.querySelector('.reassign');
     button.disabled = false;
     button.onclick = () => openReassign(card, face, asset);
+    const removeButton = card.querySelector('.remove-face');
+    removeButton.disabled = false;
+    removeButton.onclick = () => removeFace(card, face, asset);
   } catch (e) {
     faceState.innerHTML = `<span class="error-inline">Face: ${esc(e.message)}</span> <button class="retry-face" type="button">erneut versuchen</button>`;
     const retry = card.querySelector('.retry-face');
@@ -338,12 +357,118 @@ async function reassign(personId) {
   }
 }
 
+function markCardReviewed(card, label = 'Korrigiert') {
+  if (!card) return;
+  state.reviewed.add(card.dataset.asset);
+  card.classList.add('reviewed');
+  const badge = card.querySelector('.ok-badge');
+  badge.textContent = label;
+  badge.classList.remove('hidden');
+  if ($('#hideReviewed').checked) card.classList.add('hidden');
+}
+
 function markReviewed() {
-  if (!state.activeCard) return;
-  state.reviewed.add(state.activeCard.dataset.asset);
-  state.activeCard.classList.add('reviewed');
-  state.activeCard.querySelector('.ok-badge').classList.remove('hidden');
-  if ($('#hideReviewed').checked) state.activeCard.classList.add('hidden');
+  markCardReviewed(state.activeCard);
+}
+
+async function removeFace(card, face, asset, { confirmDelete = true } = {}) {
+  const taken = asset.fileCreatedAt || asset.localDateTime || asset.createdAt;
+  if (confirmDelete && !window.confirm(`Face-Markierung wirklich entfernen?\n${fmtDate(taken)} · ${asset.originalFileName || ''}`)) return false;
+
+  const button = card?.querySelector('.remove-face');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Wird entfernt…';
+  }
+
+  try {
+    await api(`/review-api/faces/${face.id}`, { method: 'DELETE' });
+    if (card) {
+      card.querySelector('.face-box')?.classList.add('hidden');
+      card.querySelector('.crop')?.getContext('2d')?.clearRect(0, 0, 500, 500);
+      markCardReviewed(card, 'Markierung entfernt');
+    }
+    if (confirmDelete) toast('Face-Markierung entfernt');
+    return true;
+  } catch (e) {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Markierung entfernen';
+    }
+    if (confirmDelete) toast(e.message);
+    return false;
+  }
+}
+
+async function collectBeforeBirthAssets() {
+  const birthDate = state.person?.birthDate;
+  if (!birthDate) return [];
+  const collected = [];
+  let page = 1;
+  while (page != null) {
+    const d = await api(`/review-api/people/${state.person.id}/assets?page=${page}&size=100&takenBefore=${encodeURIComponent(`${birthDate}T23:59:59.999Z`)}`);
+    for (const asset of d.items || []) {
+      const taken = asset.fileCreatedAt || asset.localDateTime || asset.createdAt;
+      if (isBeforeBirth(birthDate, taken)) collected.push(asset);
+    }
+    page = d.nextPage;
+  }
+  return collected;
+}
+
+async function runBatchBeforeBirth() {
+  if (!state.person?.birthDate) return toast('Für diese Person ist kein Geburtsdatum hinterlegt.');
+  const button = $('#batchBeforeBirthBtn');
+  if (button.dataset.running) return;
+  const personId = state.person.id;
+  const originalLabel = button.textContent;
+  button.dataset.running = 'true';
+  button.disabled = true;
+  button.textContent = 'Treffer werden gesucht…';
+
+  try {
+    const assets = await collectBeforeBirthAssets();
+    if (!assets.length) {
+      toast('Keine Zuordnungen vor der Geburt gefunden.');
+      return;
+    }
+    if (!window.confirm(`${assets.length} Foto${assets.length === 1 ? '' : 's'} liegen vor dem Geburtsdatum. Die Face-Markierung dieser Person wird dort dauerhaft entfernt. Fortfahren?`)) return;
+
+    let done = 0;
+    let removed = 0;
+    let failed = 0;
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < assets.length) {
+        const index = cursor++;
+        const asset = assets[index];
+        try {
+          const faces = await api(`/review-api/assets/${asset.id}/faces`);
+          const matching = faces.filter((f) => f.person?.id === personId || f.personId === personId);
+          for (const face of matching) {
+            await api(`/review-api/faces/${face.id}`, { method: 'DELETE' });
+            removed++;
+          }
+        } catch {
+          failed++;
+        } finally {
+          done++;
+          button.textContent = `Entferne ${done}/${assets.length}…`;
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, assets.length) }, () => worker()));
+
+    toast(`${removed} Face-Markierung${removed === 1 ? '' : 'en'} entfernt${failed ? ` · ${failed} Fehler` : ''}`);
+    await selectPerson(personId);
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    delete button.dataset.running;
+    button.disabled = false;
+    button.textContent = originalLabel;
+    updateBatchButton();
+  }
 }
 
 $('#createPersonBtn').onclick = async () => {
@@ -360,6 +485,7 @@ $('#createPersonBtn').onclick = async () => {
   }
 };
 
+$('#batchBeforeBirthBtn').onclick = () => runBatchBeforeBirth();
 $('#loadMoreBtn').onclick = () => loadNextPage();
 $('#closeDialog').onclick = () => $('#reassignDialog').close();
 $('#backBtn').onclick = () => {

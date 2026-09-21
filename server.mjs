@@ -102,17 +102,21 @@ async function handleApi(req, res, url) {
       const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
       const size = Number.isInteger(requestedSize) && requestedSize > 0 ? Math.min(requestedSize, 100) : 40;
 
+      const takenBefore = url.searchParams.get('takenBefore');
+      const searchBody = {
+        personIds: [personId],
+        page,
+        size,
+        order: 'asc',
+        withPeople: false,
+        withExif: false,
+        type: 'IMAGE',
+      };
+      if (takenBefore) searchBody.takenBefore = takenBefore;
+
       const r = await immichFetch('/search/metadata', {
         method: 'POST',
-        body: JSON.stringify({
-          personIds: [personId],
-          page,
-          size,
-          order: 'asc',
-          withPeople: false,
-          withExif: false,
-          type: 'IMAGE',
-        }),
+        body: JSON.stringify(searchBody),
       });
       if (!r.ok) return proxyJson(res, r);
 
@@ -156,6 +160,16 @@ async function handleApi(req, res, url) {
       return proxyJson(res, await immichFetch(`/faces/${body.personId}`, {
         method: 'PUT',
         body: JSON.stringify({ id: reassignMatch[1] }),
+      }));
+    }
+
+    const deleteFaceMatch = url.pathname.match(/^\/review-api\/faces\/([0-9a-f-]+)$/i);
+    if (req.method === 'DELETE' && deleteFaceMatch) {
+      // Immich has no stable "unassign person" endpoint. Deleting the face removes
+      // this face marker/association from the asset without assigning another person.
+      return proxyJson(res, await immichFetch(`/faces/${deleteFaceMatch[1]}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ force: true }),
       }));
     }
 

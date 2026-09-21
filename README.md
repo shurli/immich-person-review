@@ -1,6 +1,12 @@
 # Immich Person Review
 
-## Version 0.2.0
+## Version 0.3.0
+
+- Pro Face gibt es jetzt **„Markierung entfernen“**. Dabei wird über die stabile Immich-API `DELETE /faces/{id}` genau dieses Face entfernt, ohne es einer anderen Person zuzuweisen.
+- Batch-Aktion **„Alle „vor Geburt“ entfernen“** für Personen mit Geburtsdatum. Sie sucht paginiert alle passenden Assets, sammelt die Treffer zuerst vollständig und löscht anschließend die Face-Markierungen.
+- Für die Löschfunktionen ist zusätzlich die API-Berechtigung `face.delete` erforderlich.
+
+### Bereits seit 0.2.0
 
 - Face-Abruf korrigiert: `GET /faces?id=<asset-id>` statt des ungültigen Parameters `assetId`.
 - Asset-Timeline ist paginiert (standardmäßig 40 Fotos pro Seite).
@@ -32,6 +38,7 @@ Für den Review-Betrieb mindestens:
 - `asset.view`
 - `face.read`
 - `face.update`
+- `face.delete` (für „Markierung entfernen“ und den Batch „vor Geburt“)
 
 ## Start mit Docker Compose
 
@@ -93,6 +100,8 @@ Der Browser kennt den Immich API-Key nicht. Bilder werden ebenfalls über den Re
 
 - Es werden keine Immich-internen Timeline-Endpunkte verwendet.
 - Die Asset-Liste wird über `POST /search/metadata` mit `personIds` geladen.
-- Gesichter werden per `GET /faces?assetId=...` geladen.
+- Gesichter werden per `GET /faces?id=<asset-id>` geladen.
 - Die Korrektur folgt dem aktuellen Immich-Endpunkt `PUT /faces/{personId}` mit `{ id: faceId }`: die Zielperson steht im Pfad, das umzuhängende Face im Body.
-- Bei sehr großen Personen-Clustern werden die Assets serverseitig seitenweise geladen; die UI rendert aktuell alle Treffer. Eine virtuelle Liste wäre der nächste Optimierungsschritt für zehntausende Bilder.
+- Bei sehr großen Personen-Clustern werden die Assets serverseitig seitenweise geladen; Face-Daten werden nur in der Nähe des Viewports geladen.
+- „Markierung entfernen“ löscht das Face-Objekt über die offizielle Immich-API. Die aktuelle stabile API bietet keinen separaten Endpunkt, um nur `personId` auf `null` zu setzen.
+- Der „vor Geburt“-Batch nutzt `takenBefore` in `POST /search/metadata`, sammelt zuerst alle Assets und beginnt erst danach mit dem Löschen. Dadurch verschiebt die laufende Mutation nicht die Such-Pagination.
