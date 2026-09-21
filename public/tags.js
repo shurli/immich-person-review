@@ -5,7 +5,7 @@ const leafName = (value) => norm(value).split('/').at(-1) || '';
 const slug = (value) => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'tag';
 
 export function createTagManager({ api, toast }) {
-  const state = { document: null, sourcePath: '', selected: null, search: '', dirty: false };
+  const state = { document: null, sourcePath: '', selected: null, search: '', dirty: false, calibration: null, calibrationLoading: false };
   const $ = (s) => document.querySelector(s);
 
   function folders() {
@@ -114,7 +114,7 @@ export function createTagManager({ api, toast }) {
       wireDrag(row, { type: 'folder', path: row.dataset.folder });
     });
     $('#tagTree').querySelectorAll('[data-tag-id]').forEach((row) => {
-      row.querySelector('button').onclick = () => { state.selected = { type: 'tag', id: row.dataset.tagId }; render(); };
+      row.querySelector('button').onclick = () => { state.selected = { type: 'tag', id: row.dataset.tagId }; state.calibration = null; render(); };
       wireDrag(row, { type: 'tag', id: row.dataset.tagId });
     });
     $('#tagTree').querySelectorAll('[data-folder]').forEach((row) => {
@@ -168,10 +168,74 @@ export function createTagManager({ api, toast }) {
       <label>Prompt-Aggregation<input id="tagAggregationInput" value="${esc(concept.prompt_aggregation || 'top2_mean')}"></label>
       <label>Threshold<input id="tagThresholdInput" type="number" step="0.001" value="${concept.threshold == null ? '' : esc(concept.threshold)}" placeholder="noch nicht kalibriert"></label>
       <label>Englische SigLIP2-Prompts<textarea id="tagPromptsInput" rows="8">${esc((concept.prompts_en || []).join('\n'))}</textarea><small>Ein Prompt pro Zeile.</small></label>
-      <div class="tag-detail-actions"><button id="tagApplyBtn" class="btn" type="button">Änderung übernehmen</button><button id="tagCopyBtn" class="btn ghost" type="button">Tag kopieren</button><button id="tagDeleteBtn" class="btn remove" type="button">Tag löschen</button></div>`;
+      <div class="tag-detail-actions"><button id="tagApplyBtn" class="btn" type="button">Änderung übernehmen</button><button id="tagCopyBtn" class="btn ghost" type="button">Tag kopieren</button><button id="tagDeleteBtn" class="btn remove" type="button">Tag löschen</button></div>
+      <section class="tag-calibration">
+        <div class="tag-calibration-head"><div><span class="tag-kind">SigLIP2 Preview</span><h3>Threshold kalibrieren</h3><p>Zeigt die ähnlichsten vorhandenen Immich-Assets anhand der gespeicherten Smart-Search-Embeddings.</p></div><button id="tagPreviewBtn" class="btn ghost" type="button">Preview laden</button></div>
+        <div class="tag-calibration-controls"><label>Beispiele<select id="tagPreviewSize"><option>24</option><option selected>48</option><option>72</option><option>96</option></select></label><label class="tag-threshold-range">Preview-Threshold<input id="tagPreviewThreshold" type="range" min="-1" max="1" step="0.001" value="${concept.threshold == null ? '0.30' : esc(concept.threshold)}"><span id="tagPreviewThresholdValue">${concept.threshold == null ? '0.300' : Number(concept.threshold).toFixed(3)}</span></label><button id="tagUseThresholdBtn" class="btn" type="button">Als Threshold übernehmen</button></div>
+        <div id="tagCalibrationMeta" class="tag-calibration-meta">Noch keine Preview geladen.</div>
+        <div id="tagCalibrationGrid" class="tag-calibration-grid"></div>
+      </section>`;
     $('#tagApplyBtn').onclick = () => applyTagEdit(concept);
     $('#tagCopyBtn').onclick = () => copyTag(concept);
     $('#tagDeleteBtn').onclick = () => deleteTag(concept);
+    $('#tagPreviewBtn').onclick = () => loadCalibrationPreview(concept);
+    $('#tagPreviewThreshold').oninput = (event) => { $('#tagPreviewThresholdValue').textContent = Number(event.target.value).toFixed(3); renderCalibrationResults(concept); };
+    $('#tagUseThresholdBtn').onclick = () => { $('#tagThresholdInput').value = Number($('#tagPreviewThreshold').value).toFixed(3); concept.threshold = Number($('#tagPreviewThreshold').value); markDirty(); toast('Threshold übernommen – JSON noch speichern'); };
+    renderCalibrationResults(concept);
+  }
+
+
+  function currentConceptFromForm(concept) {
+    if (!$('#tagPromptsInput')) return concept;
+    return {
+      ...concept,
+      prompt_aggregation: $('#tagAggregationInput').value.trim() || 'top2_mean',
+      prompts_en: $('#tagPromptsInput').value.split('\n').map((x) => x.trim()).filter(Boolean),
+    };
+  }
+
+  async function loadCalibrationPreview(concept) {
+    if (state.calibrationLoading) return;
+    const previewConcept = currentConceptFromForm(concept);
+    if (!previewConcept.prompts_en.length) return toast('Für die Preview wird mindestens ein Prompt benötigt.');
+    state.calibrationLoading = true;
+    state.calibration = null;
+    $('#tagPreviewBtn').disabled = true;
+    $('#tagPreviewBtn').textContent = 'Berechne…';
+    $('#tagCalibrationMeta').textContent = 'Text-Embeddings und Kandidaten werden berechnet…';
+    $('#tagCalibrationGrid').innerHTML = '<div class="loading">SigLIP2-Preview wird geladen…</div>';
+    try {
+      const sampleSize = Number($('#tagPreviewSize').value || 48);
+      const result = await api(`/review-api/tags/${encodeURIComponent(concept.id)}/calibration-preview`, {
+        method: 'POST',
+        body: JSON.stringify({ sampleSize, candidatePerPrompt: Math.max(60, sampleSize * 2), concept: previewConcept }),
+      });
+      state.calibration = { conceptId: concept.id, ...result };
+      renderCalibrationResults(concept);
+    } catch (error) {
+      $('#tagCalibrationMeta').textContent = error.message;
+      $('#tagCalibrationGrid').innerHTML = '';
+      toast(error.message);
+    } finally {
+      state.calibrationLoading = false;
+      if ($('#tagPreviewBtn')) { $('#tagPreviewBtn').disabled = false; $('#tagPreviewBtn').textContent = 'Preview neu laden'; }
+    }
+  }
+
+  function renderCalibrationResults(concept) {
+    const grid = $('#tagCalibrationGrid');
+    const meta = $('#tagCalibrationMeta');
+    if (!grid || !meta) return;
+    const result = state.calibration?.conceptId === concept.id ? state.calibration : null;
+    if (!result) return;
+    const threshold = Number($('#tagPreviewThreshold')?.value ?? concept.threshold ?? 0.3);
+    const positives = result.items.filter((item) => item.score >= threshold).length;
+    meta.innerHTML = `${esc(result.modelName)} · ${result.dimension}D · ${esc(result.aggregation)} · ${result.prompts.length} Prompts · <strong>${positives}/${result.items.length}</strong> über ${threshold.toFixed(3)}`;
+    grid.innerHTML = result.items.map((item) => {
+      const pass = item.score >= threshold;
+      const detail = [...item.promptScores].sort((a,b) => b.score - a.score).slice(0,3).map((x) => `${x.score.toFixed(3)} · ${x.prompt}`).join('\n');
+      return `<article class="tag-calibration-card ${pass ? 'pass' : 'fail'}" title="${esc(detail)}"><div class="tag-calibration-image"><img loading="lazy" src="/review-api/assets/${encodeURIComponent(item.assetId)}/thumbnail?size=preview" alt="${esc(item.originalFileName || '')}"><span class="tag-score">${Number(item.score).toFixed(3)}</span></div><div class="tag-calibration-caption"><strong>${esc(item.originalFileName || item.assetId)}</strong><small>${pass ? '✓ über Threshold' : 'unter Threshold'}</small></div></article>`;
+    }).join('');
   }
 
   function render() { renderStats(); renderTree(); renderDetails(); }

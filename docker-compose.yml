@@ -1,7 +1,7 @@
 services:
   immich-person-review:
     build: .
-    image: immich-person-review:0.11.0
+    image: immich-person-review:0.12.0
     container_name: immich-person-review
     restart: unless-stopped
     ports:
