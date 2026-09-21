@@ -26,7 +26,7 @@
       <div id="unnamedChooser" class="hidden">
         <div class="unnamed-head">
           <div><h1>Unbenannte Personen</h1><p>Unbenannte, sichtbare Personen aus Immich. Kennzahlen werden beim Scrollen nachgeladen.</p></div>
-          <div class="unnamed-tools"><div id="unnamedCount" class="muted"></div><button id="refreshUnnamedThumbsBtn" class="btn ghost" type="button">Beste Thumbnails setzen</button></div>
+          <div class="unnamed-tools"><div id="unnamedCount" class="muted"></div><button id="refreshUnnamedThumbsBtn" class="btn ghost" type="button">Beste Thumbnails setzen</button><button id="duplicateFacesBatchBtn" class="btn remove" type="button">Doppelte Face-Boxen bereinigen</button></div>
         </div>
         <div id="unnamedPeople" class="unnamed-grid"></div>
       </div>
@@ -69,6 +69,15 @@
       <p id="mergeInfo" class="muted"></p>
       <input id="mergeTargetSearch" type="search" placeholder="Zielperson suchen…" autocomplete="off" />
       <div id="mergeTargets" class="target-list"></div>
+    </form>
+  </dialog>
+
+  <dialog id="duplicateFacesDialog">
+    <form method="dialog" class="dialog-card" onsubmit="return false">
+      <div class="dialog-head"><h2>Doppelte Face-Boxen</h2><button id="closeDuplicateFacesDialog" class="icon-btn" aria-label="Schließen">×</button></div>
+      <p id="duplicateFacesSummary" class="muted"></p>
+      <div id="duplicateFacesPreview" class="duplicate-preview"></div>
+      <div class="dialog-actions"><button id="applyDuplicateFacesBtn" class="btn remove" type="button">Größere Face-Boxen entfernen</button></div>
     </form>
   </dialog>
 

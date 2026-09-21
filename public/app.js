@@ -15,6 +15,7 @@ const state = {
   unnamed: [],
   mergeSource: null,
   immichUrl: '',
+  duplicateFaceScanId: null,
 };
 
 let faceObserver;
@@ -268,9 +269,57 @@ async function refreshUnnamedThumbnails() {
   toast(`Thumbnail-Batch fertig: ${changed} aktualisiert${failed ? `, ${failed} Fehler` : ''}`);
 }
 
+
+
+async function scanDuplicateFaceBoxes() {
+  const button = $('#duplicateFacesBatchBtn');
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Scanne Personen & Assets…';
+  state.duplicateFaceScanId = null;
+  try {
+    const result = await api('/review-api/maintenance/duplicate-person-faces/scan', { method: 'POST', body: '{}' });
+    state.duplicateFaceScanId = result.scanId;
+    $('#duplicateFacesSummary').textContent = `${result.peopleScanned} Personen · ${result.assetsScanned} Assets geprüft · ${result.duplicateAssets} Assets mit Mehrfachmarkierung · ${result.facesToRemove} größere Face-Boxen würden entfernt.`;
+    $('#duplicateFacesPreview').innerHTML = result.preview.length ? result.preview.map((item) => `<div class="duplicate-preview-row"><div><strong>${esc(item.personName || 'Unbenannt')}</strong><div class="muted">${esc(item.assetName || item.assetId)}</div></div><div class="duplicate-pixels">${item.markedFaces}× markiert · behält ${item.keepPixels.toLocaleString('de-AT')} px · entfernt ${item.removePixels.map((x) => x.toLocaleString('de-AT')).join(', ')} px</div></div>`).join('') : '<div class="muted">Keine doppelten Person-Markierungen gefunden.</div>';
+    $('#applyDuplicateFacesBtn').classList.toggle('hidden', result.facesToRemove === 0);
+    $('#duplicateFacesDialog').showModal();
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
+}
+
+async function applyDuplicateFaceBoxes() {
+  if (!state.duplicateFaceScanId) return toast('Bitte zuerst erneut scannen');
+  const button = $('#applyDuplicateFacesBtn');
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Entferne Face-Boxen…';
+  try {
+    const result = await api('/review-api/maintenance/duplicate-person-faces/apply', {
+      method: 'POST',
+      body: JSON.stringify({ scanId: state.duplicateFaceScanId }),
+    });
+    state.duplicateFaceScanId = null;
+    $('#duplicateFacesDialog').close();
+    toast(`Bereinigung fertig: ${result.removed}/${result.requested} Face-Boxen entfernt${result.failed ? ` · ${result.failed} Fehler` : ''}`);
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
+}
+
 $('#reviewTab').onclick = () => setChooserView('review');
 $('#unnamedTab').onclick = () => setChooserView('unnamed');
 $('#refreshUnnamedThumbsBtn').onclick = refreshUnnamedThumbnails;
+$('#duplicateFacesBatchBtn').onclick = scanDuplicateFaceBoxes;
+$('#applyDuplicateFacesBtn').onclick = applyDuplicateFaceBoxes;
+$('#closeDuplicateFacesDialog').onclick = () => $('#duplicateFacesDialog').close();
 $('#closeMergeDialog').onclick = () => $('#mergeDialog').close();
 $('#mergeTargetSearch').addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase();

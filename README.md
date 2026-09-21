@@ -144,8 +144,13 @@ Der Browser kennt den Immich API-Key nicht. Bilder werden ebenfalls über den Re
 Die Personen-Timeline filtert nicht mehr auf Bilder. Es werden alle von Immich fuer die Person gefundenen Assets (insbesondere Bilder und Videos) paginiert geladen. Videos werden in der Review-Ansicht ueber ihr Immich-Thumbnail dargestellt; Face-Pruefung und Zuordnungsaktionen funktionieren identisch.
 
 
-## v0.6.0
+## v0.7.0
 
 - Klick auf ein Personenbild öffnet die Person direkt in der konfigurierten Immich-Weboberfläche.
 - Batch „Beste Thumbnails setzen“ für sichtbare unbenannte Personen. Gewählt wird das Face mit der größten Bounding-Box-Pixelfläche im Originalasset.
 - Das Setzen des Feature-Face-Thumbnails nutzt ausschließlich die Immich API und benötigt `person.update`.
+
+
+## v0.7.0 – Doppelte Person-Faces bereinigen
+
+In der Ansicht **Unbenannte Personen** gibt es den globalen Batch **Doppelte Face-Boxen bereinigen**. Er scannt alle Personen (inklusive versteckter) und deren Assets ausschließlich über die Immich-API. Ist dieselbe Person in einem Asset mehrfach markiert, bleibt die kleinste Bounding-Box erhalten und alle größeren Face-Markierungen dieser Person werden nach einer Vorschau gelöscht. Benötigte zusätzliche Berechtigung: `face.delete`.

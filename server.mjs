@@ -14,6 +14,8 @@ const apiPrefix = apiPrefixRaw ? '/' + apiPrefixRaw.replace(/^\/+|\/+$/g, '') : 
 const apiKey = process.env.IMMICH_API_KEY || '';
 const unnamedStatsCache = new Map();
 const UNNAMED_STATS_TTL_MS = 5 * 60 * 1000;
+const duplicateFaceScans = new Map();
+const DUPLICATE_SCAN_TTL_MS = 15 * 60 * 1000;
 
 if (!immichUrl || !apiKey) {
   console.error('IMMICH_URL and IMMICH_API_KEY are required.');
@@ -127,6 +129,151 @@ async function getUnnamedPersonStats(personId) {
   return data;
 }
 
+
+function facePersonId(face) {
+  return face?.person?.id || face?.personId || null;
+}
+
+function faceBoxPixels(face) {
+  const width = Math.max(0, Number(face?.boundingBoxX2) - Number(face?.boundingBoxX1));
+  const height = Math.max(0, Number(face?.boundingBoxY2) - Number(face?.boundingBoxY1));
+  const pixels = width * height;
+  return Number.isFinite(pixels) ? pixels : 0;
+}
+
+async function collectAllPeople() {
+  const people = [];
+  let page = 1;
+  while (page < 10000) {
+    const r = await immichFetch(`/people?page=${page}&size=250&withHidden=true`);
+    if (!r.ok) {
+      const error = new Error(`Immich people search failed with HTTP ${r.status}`);
+      error.response = r;
+      throw error;
+    }
+    const data = await r.json();
+    people.push(...(data.people || []));
+    if (!data.hasNextPage) break;
+    page++;
+  }
+  return people;
+}
+
+async function scanDuplicatePersonFaces() {
+  const people = await collectAllPeople();
+  const faceCache = new Map();
+  const assetMeta = new Map();
+  const matches = [];
+  let personCursor = 0;
+
+  async function getFaces(assetId) {
+    if (!faceCache.has(assetId)) {
+      faceCache.set(assetId, (async () => {
+        const r = await immichFetch(`/faces?id=${encodeURIComponent(assetId)}`);
+        if (!r.ok) {
+          const error = new Error(`Immich face lookup failed with HTTP ${r.status}`);
+          error.response = r;
+          throw error;
+        }
+        return r.json();
+      })());
+    }
+    return faceCache.get(assetId);
+  }
+
+  const workers = Array.from({ length: Math.min(4, Math.max(1, people.length)) }, async () => {
+    while (personCursor < people.length) {
+      const person = people[personCursor++];
+      const assets = await collectPersonAssets(person.id);
+      for (const asset of assets) {
+        assetMeta.set(asset.id, asset);
+        const faces = await getFaces(asset.id);
+        const samePerson = faces.filter((face) => facePersonId(face) === person.id);
+        if (samePerson.length <= 1) continue;
+        const sorted = samePerson.slice().sort((a, b) => faceBoxPixels(a) - faceBoxPixels(b));
+        const keep = sorted[0];
+        const remove = sorted.slice(1);
+        matches.push({
+          assetId: asset.id,
+          assetName: asset.originalFileName || '',
+          personId: person.id,
+          personName: person.name || '',
+          keepFaceId: keep.id,
+          keepPixels: faceBoxPixels(keep),
+          remove: remove.map((face) => ({ faceId: face.id, pixels: faceBoxPixels(face) })),
+        });
+      }
+    }
+  });
+  await Promise.all(workers);
+
+  const scanId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  const removals = matches.flatMap((match) => match.remove.map((item) => ({
+    ...item,
+    assetId: match.assetId,
+    assetName: match.assetName,
+    personId: match.personId,
+    personName: match.personName,
+  })));
+  const scan = { createdAt: Date.now(), matches, removals };
+  duplicateFaceScans.set(scanId, scan);
+  for (const [id, value] of duplicateFaceScans) {
+    if (Date.now() - value.createdAt > DUPLICATE_SCAN_TTL_MS) duplicateFaceScans.delete(id);
+  }
+  return {
+    scanId,
+    peopleScanned: people.length,
+    assetsScanned: faceCache.size,
+    duplicateAssets: new Set(matches.map((m) => m.assetId)).size,
+    duplicateGroups: matches.length,
+    facesToRemove: removals.length,
+    preview: matches.slice(0, 20).map((m) => ({
+      assetId: m.assetId,
+      assetName: m.assetName,
+      personId: m.personId,
+      personName: m.personName,
+      markedFaces: m.remove.length + 1,
+      keepPixels: m.keepPixels,
+      removePixels: m.remove.map((x) => x.pixels),
+    })),
+  };
+}
+
+async function applyDuplicatePersonFaceScan(scanId) {
+  const scan = duplicateFaceScans.get(scanId);
+  if (!scan || Date.now() - scan.createdAt > DUPLICATE_SCAN_TTL_MS) {
+    duplicateFaceScans.delete(scanId);
+    const error = new Error('Scan ist abgelaufen. Bitte erneut scannen.');
+    error.status = 410;
+    throw error;
+  }
+  let cursor = 0;
+  let removed = 0;
+  const failures = [];
+  const workers = Array.from({ length: Math.min(4, Math.max(1, scan.removals.length)) }, async () => {
+    while (cursor < scan.removals.length) {
+      const item = scan.removals[cursor++];
+      try {
+        const r = await immichFetch(`/faces/${encodeURIComponent(item.faceId)}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ force: true }),
+        });
+        if (!r.ok) {
+          const text = await r.text();
+          failures.push({ faceId: item.faceId, assetId: item.assetId, status: r.status, message: text.slice(0, 300) });
+        } else {
+          removed++;
+        }
+      } catch (error) {
+        failures.push({ faceId: item.faceId, assetId: item.assetId, status: 0, message: error.message });
+      }
+    }
+  });
+  await Promise.all(workers);
+  duplicateFaceScans.delete(scanId);
+  return { ok: failures.length === 0, requested: scan.removals.length, removed, failed: failures.length, failures: failures.slice(0, 30) };
+}
+
 async function streamImmich(res, response, cache = true) {
   if (!response.ok) return proxyJson(res, response);
   const headers = {
@@ -148,6 +295,28 @@ async function handleApi(req, res, url) {
       if (!r.ok) return proxyJson(res, r);
       const keyInfo = await r.json();
       return json(res, 200, { ok: true, keyName: keyInfo.name || 'API key', immichUrl, version: appVersion });
+    }
+
+
+
+    if (req.method === 'POST' && url.pathname === '/review-api/maintenance/duplicate-person-faces/scan') {
+      try {
+        return json(res, 200, await scanDuplicatePersonFaces());
+      } catch (error) {
+        if (error.response) return proxyJson(res, error.response);
+        throw error;
+      }
+    }
+
+    if (req.method === 'POST' && url.pathname === '/review-api/maintenance/duplicate-person-faces/apply') {
+      const body = await parseBody(req);
+      if (!body.scanId) return json(res, 400, { message: 'scanId is required' });
+      try {
+        return json(res, 200, await applyDuplicatePersonFaceScan(body.scanId));
+      } catch (error) {
+        if (error.status) return json(res, error.status, { message: error.message });
+        throw error;
+      }
     }
 
     if (req.method === 'GET' && url.pathname === '/review-api/people') {
