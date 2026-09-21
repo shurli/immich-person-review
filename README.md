@@ -297,3 +297,8 @@ Dafür werden zusätzlich benötigt:
 - ein vollständig mit dem in `data/tags.json` unter `target_model` konfigurierten Modell neu indizierter Smart-Search-Bestand
 
 Der Preview-Threshold kann live verschoben und anschließend mit **Als Threshold übernehmen** in den Tag übernommen werden. Persistiert wird er erst mit **JSON speichern**.
+
+
+## Tag-Taxonomie ab 0.12.2
+
+Die mitgelieferte Taxonomie liegt unveränderlich unter `/app/defaults/tags.json`. Änderungen werden persistent unter `/app/storage/tags.json` gespeichert. Beim ersten Start wird die persistente Datei automatisch aus den Defaults erzeugt. Dadurch kann ein leeres oder älteres Docker-Volume die mitgelieferte Taxonomie nicht mehr verdecken.

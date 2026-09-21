@@ -10,7 +10,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
 const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const appVersion = packageInfo.version || 'unknown';
-const tagTaxonomyPath = path.resolve(process.env.TAG_TAXONOMY_PATH || path.join(__dirname, 'data', 'tags.json'));
+const tagTaxonomyPath = path.resolve(process.env.TAG_TAXONOMY_PATH || path.join(__dirname, 'storage', 'tags.json'));
+const tagTaxonomyDefaultPath = path.resolve(process.env.TAG_TAXONOMY_DEFAULT_PATH || path.join(__dirname, 'defaults', 'tags.json'));
 const tagTaxonomyBackupPath = `${tagTaxonomyPath}.bak`;
 const port = Number(process.env.PORT || 3000);
 const immichUrl = (process.env.IMMICH_URL || '').replace(/\/$/, '');
@@ -481,10 +482,21 @@ function validateTagTaxonomy(document) {
   return true;
 }
 
-function readTagTaxonomy() {
-  if (!fs.existsSync(tagTaxonomyPath)) {
-    return { schema_version: 2, taxonomy_version: 'custom-v1', tag_language: 'de', prompt_language: 'en', folders: ['KI'], concepts: [] };
+function ensureTagTaxonomyFile() {
+  if (fs.existsSync(tagTaxonomyPath)) return;
+  fs.mkdirSync(path.dirname(tagTaxonomyPath), { recursive: true });
+  if (fs.existsSync(tagTaxonomyDefaultPath)) {
+    fs.copyFileSync(tagTaxonomyDefaultPath, tagTaxonomyPath);
+    console.log(`Initialized tag taxonomy from ${tagTaxonomyDefaultPath} -> ${tagTaxonomyPath}`);
+    return;
   }
+  const empty = { schema_version: 2, taxonomy_version: 'custom-v1', tag_language: 'de', prompt_language: 'en', folders: ['KI'], concepts: [] };
+  fs.writeFileSync(tagTaxonomyPath, `${JSON.stringify(empty, null, 2)}\n`, 'utf8');
+  console.warn(`No default tag taxonomy found at ${tagTaxonomyDefaultPath}; created empty taxonomy at ${tagTaxonomyPath}`);
+}
+
+function readTagTaxonomy() {
+  ensureTagTaxonomyFile();
   const document = JSON.parse(fs.readFileSync(tagTaxonomyPath, 'utf8'));
   validateTagTaxonomy(document);
   return document;
