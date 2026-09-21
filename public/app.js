@@ -82,6 +82,7 @@ function thumbAsset(id) { return `/review-api/assets/${id}/thumbnail?size=previe
 async function init() {
   try {
     const s = await api('/review-api/status');
+    $('#appVersion').textContent = s.version ? `v${s.version}` : 'v?';
     $('#status').textContent = `Verbunden · ${s.keyName}`;
     $('#status').className = 'status ok';
   } catch (e) {

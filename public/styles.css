@@ -4,3 +4,5 @@
 .batch-note{font-size:12px;color:#6b7280}.actions .remove:disabled{opacity:.55;cursor:not-allowed}
 
 .actions .detach:disabled{opacity:.55;cursor:not-allowed}
+
+.brand{display:flex;align-items:center;gap:8px}.topbar .brand span{margin-left:0}.version-badge{display:inline-flex;align-items:center;border-radius:999px;background:#eef2ff;color:#4338ca!important;padding:3px 8px;font-size:12px;font-weight:700;line-height:1.2}

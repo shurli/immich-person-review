@@ -1,5 +1,15 @@
 # Immich Person Review
 
+## Version erkennen
+
+Die laufende Version wird an zwei Stellen angezeigt:
+
+- beim Containerstart im Log, z. B. `Immich Person Review v0.4.3`
+- oben links in der Web-App als Versions-Badge
+
+Die Release-Archive sind versioniert, enthalten aber immer denselben Projektordner `immich-person-review/`. Dadurch bleibt der Pfad bei Updates konstant.
+
+
 ## Version 0.3.0
 
 - Pro Face gibt es jetzt **„Markierung entfernen“**. Dabei wird über die stabile Immich-API `DELETE /faces/{id}` genau dieses Face entfernt, ohne es einer anderen Person zuzuweisen.
@@ -117,6 +127,6 @@ Der Browser kennt den Immich API-Key nicht. Bilder werden ebenfalls über den Re
 - `docker-compose.yml` liest `IMMICH_URL` und `IMMICH_API_KEY` direkt aus `.env`.
 
 
-## v0.4.2
+## v0.4.3
 
 Die Personen-Timeline filtert nicht mehr auf Bilder. Es werden alle von Immich fuer die Person gefundenen Assets (insbesondere Bilder und Videos) paginiert geladen. Videos werden in der Review-Ansicht ueber ihr Immich-Thumbnail dargestellt; Face-Pruefung und Zuordnungsaktionen funktionieren identisch.

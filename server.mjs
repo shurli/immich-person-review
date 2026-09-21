@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
+const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+const appVersion = packageInfo.version || 'unknown';
 const port = Number(process.env.PORT || 3000);
 const immichUrl = (process.env.IMMICH_URL || '').replace(/\/$/, '');
 const apiPrefixRaw = process.env.IMMICH_API_PREFIX ?? '/api';
@@ -77,7 +79,7 @@ async function handleApi(req, res, url) {
       const r = await immichFetch('/api-keys/me');
       if (!r.ok) return proxyJson(res, r);
       const keyInfo = await r.json();
-      return json(res, 200, { ok: true, keyName: keyInfo.name || 'API key', immichUrl });
+      return json(res, 200, { ok: true, keyName: keyInfo.name || 'API key', immichUrl, version: appVersion });
     }
 
     if (req.method === 'GET' && url.pathname === '/review-api/people') {
@@ -270,6 +272,7 @@ http.createServer((req, res) => {
   if (url.pathname.startsWith('/review-api/')) return handleApi(req, res, url);
   return serveStatic(req, res, url);
 }).listen(port, '0.0.0.0', () => {
-  console.log(`Immich Person Review listening on :${port}`);
+  console.log(`Immich Person Review v${appVersion}`);
+  console.log(`Listening on :${port}`);
   console.log(`Immich endpoint: ${immichUrl}${apiPrefix}`);
 });
