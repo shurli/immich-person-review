@@ -1,5 +1,15 @@
 # Immich Person Review
 
+## Version 0.5.0
+
+- Neue Ansicht **Unbenannte Personen**, angelehnt an die Immich-Personenübersicht.
+- Pro sichtbarer unbenannter Person: Thumbnail, exakte Anzahl zugeordneter Faces und Anzahl verschiedener Aufnahmetage.
+- Kennzahlen werden lazy beim Scrollen über die Immich-API berechnet und serverseitig kurz gecacht.
+- Direktaktion **Verstecken** über den stabilen People-Bulk-Update-Endpunkt.
+- Direktaktion **Zusammenführen** mit Zielperson-Auswahl über den stabilen Merge-Endpunkt.
+- Zusätzliche API-Rechte für diese Ansicht: `person.update` und `person.merge`; für die Statistik weiterhin `face.read`, `person.read` und `asset.read`.
+
+
 ## Version erkennen
 
 Die laufende Version wird an zwei Stellen angezeigt:
@@ -43,7 +53,9 @@ Eine kleine, eigenständige Review-Oberfläche für Immich-Personenerkennung. Si
 Für den Review-Betrieb mindestens:
 
 - `person.read`
-- `person.create` (nur für "Neue Person")
+- `person.create` (nur für "Neue Person" und Zuordnung lösen)
+- `person.update` (für „Person verstecken“)
+- `person.merge` (für „Person zusammenführen“)
 - `asset.read`
 - `asset.view`
 - `face.read`

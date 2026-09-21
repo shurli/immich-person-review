@@ -12,6 +12,8 @@ const immichUrl = (process.env.IMMICH_URL || '').replace(/\/$/, '');
 const apiPrefixRaw = process.env.IMMICH_API_PREFIX ?? '/api';
 const apiPrefix = apiPrefixRaw ? '/' + apiPrefixRaw.replace(/^\/+|\/+$/g, '') : '';
 const apiKey = process.env.IMMICH_API_KEY || '';
+const unnamedStatsCache = new Map();
+const UNNAMED_STATS_TTL_MS = 5 * 60 * 1000;
 
 if (!immichUrl || !apiKey) {
   console.error('IMMICH_URL and IMMICH_API_KEY are required.');
@@ -59,6 +61,60 @@ async function proxyJson(res, response) {
   res.end(text);
 }
 
+async function collectPersonAssets(personId) {
+  const items = [];
+  let page = 1;
+  while (page != null) {
+    const r = await immichFetch('/search/metadata', {
+      method: 'POST',
+      body: JSON.stringify({ personIds: [personId], page, size: 100, order: 'asc', withPeople: false, withExif: false }),
+    });
+    if (!r.ok) {
+      const error = new Error(`Immich asset search failed with HTTP ${r.status}`);
+      error.response = r;
+      throw error;
+    }
+    const data = await r.json();
+    const assets = data.assets || {};
+    items.push(...(assets.items || []));
+    const rawNext = assets.nextPage;
+    const next = rawNext == null || rawNext === '' ? null : Number(rawNext);
+    page = Number.isFinite(next) ? next : null;
+  }
+  return items;
+}
+
+function assetDay(asset) {
+  const value = asset.localDateTime || asset.fileCreatedAt || asset.createdAt;
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value).slice(0, 10) || null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+async function getUnnamedPersonStats(personId) {
+  const cached = unnamedStatsCache.get(personId);
+  if (cached && Date.now() - cached.at < UNNAMED_STATS_TTL_MS) return cached.data;
+
+  const assets = await collectPersonAssets(personId);
+  const days = new Set(assets.map(assetDay).filter(Boolean));
+  let faces = 0;
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(8, Math.max(1, assets.length)) }, async () => {
+    while (cursor < assets.length) {
+      const asset = assets[cursor++];
+      const r = await immichFetch(`/faces?id=${encodeURIComponent(asset.id)}`);
+      if (!r.ok) continue;
+      const list = await r.json();
+      faces += list.filter((face) => face.person?.id === personId || face.personId === personId).length;
+    }
+  });
+  await Promise.all(workers);
+  const data = { faces, days: days.size, assets: assets.length };
+  unnamedStatsCache.set(personId, { at: Date.now(), data });
+  return data;
+}
+
 async function streamImmich(res, response, cache = true) {
   if (!response.ok) return proxyJson(res, response);
   const headers = {
@@ -98,6 +154,44 @@ async function handleApi(req, res, url) {
     const personMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)$/i);
     if (req.method === 'GET' && personMatch) {
       return proxyJson(res, await immichFetch(`/people/${personMatch[1]}`));
+    }
+
+    const unnamedStatsMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/review-stats$/i);
+    if (req.method === 'GET' && unnamedStatsMatch) {
+      try {
+        return json(res, 200, await getUnnamedPersonStats(unnamedStatsMatch[1]));
+      } catch (error) {
+        if (error.response) return proxyJson(res, error.response);
+        throw error;
+      }
+    }
+
+    const hidePersonMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/hide$/i);
+    if (req.method === 'PUT' && hidePersonMatch) {
+      const id = hidePersonMatch[1];
+      const r = await immichFetch('/people', {
+        method: 'PUT',
+        body: JSON.stringify({ people: [{ id, isHidden: true }] }),
+      });
+      if (r.ok) unnamedStatsCache.delete(id);
+      return proxyJson(res, r);
+    }
+
+    const mergePersonMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/merge$/i);
+    if (req.method === 'POST' && mergePersonMatch) {
+      const sourceId = mergePersonMatch[1];
+      const body = await parseBody(req);
+      if (!body.targetPersonId) return json(res, 400, { message: 'targetPersonId is required' });
+      if (body.targetPersonId === sourceId) return json(res, 400, { message: 'Quelle und Ziel duerfen nicht identisch sein' });
+      const r = await immichFetch(`/people/${encodeURIComponent(body.targetPersonId)}/merge`, {
+        method: 'POST',
+        body: JSON.stringify({ ids: [sourceId] }),
+      });
+      if (r.ok) {
+        unnamedStatsCache.delete(sourceId);
+        unnamedStatsCache.delete(body.targetPersonId);
+      }
+      return proxyJson(res, r);
     }
 
     const assetsMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/assets$/i);

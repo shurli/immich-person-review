@@ -12,10 +12,13 @@ const state = {
   total: null,
   loadingAssets: false,
   requestToken: 0,
+  unnamed: [],
+  mergeSource: null,
 };
 
 let faceObserver;
 let pageObserver;
+let unnamedStatsObserver;
 
 async function api(url, options = {}) {
   const r = await fetch(url, {
@@ -107,6 +110,7 @@ async function loadPeople() {
     }
     state.people = all.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de'));
     renderPeople(state.people);
+    if ($('#unnamedTab')?.classList.contains('active')) renderUnnamedPeople();
   } catch (e) {
     $('#people').innerHTML = `<div class="error">${esc(e.message)}</div>`;
   }
@@ -120,6 +124,112 @@ function renderPeople(people) {
 $('#personSearch').addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase();
   renderPeople(!q ? state.people : state.people.filter((p) => (p.name || '').toLowerCase().includes(q)));
+});
+
+
+function setChooserView(view) {
+  const unnamed = view === 'unnamed';
+  $('#reviewTab').classList.toggle('active', !unnamed);
+  $('#unnamedTab').classList.toggle('active', unnamed);
+  $('#namedChooser').classList.toggle('hidden', unnamed);
+  $('#unnamedChooser').classList.toggle('hidden', !unnamed);
+  if (unnamed) renderUnnamedPeople();
+}
+
+function initUnnamedObserver() {
+  unnamedStatsObserver?.disconnect();
+  unnamedStatsObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      unnamedStatsObserver.unobserve(entry.target);
+      loadUnnamedStats(entry.target);
+    }
+  }, { rootMargin: '700px 0px' });
+}
+
+function renderUnnamedPeople() {
+  state.unnamed = state.people.filter((p) => !String(p.name || '').trim() && !p.isHidden);
+  $('#unnamedCount').textContent = `${state.unnamed.length} unbenannte Personen`;
+  $('#unnamedPeople').innerHTML = state.unnamed.map((p, i) => `<article class="unnamed-card" data-unnamed-person="${p.id}"><img src="${thumbPerson(p.id)}" loading="lazy" alt="Unbenannte Person"><div class="unnamed-card-body"><div class="unnamed-label">Unbenannte Person ${i + 1}</div><div class="unnamed-stats"><div class="stat-pill"><strong class="face-count">…</strong><span>Faces</span></div><div class="stat-pill"><strong class="day-count">…</strong><span>Aufnahmetage</span></div></div><div class="stats-state muted">Kennzahlen werden geladen…</div><div class="unnamed-actions"><button class="btn hide-person" type="button">Verstecken</button><button class="btn merge-person" type="button">Zusammenführen</button></div><div class="person-id">${esc(p.id)}</div></div></article>`).join('') || '<div class="muted">Keine sichtbaren unbenannten Personen gefunden.</div>';
+  initUnnamedObserver();
+  document.querySelectorAll('[data-unnamed-person]').forEach((card) => {
+    unnamedStatsObserver.observe(card);
+    card.querySelector('.hide-person').onclick = () => hideUnnamedPerson(card.dataset.unnamedPerson, card);
+    card.querySelector('.merge-person').onclick = () => openMergeDialog(card.dataset.unnamedPerson);
+  });
+}
+
+async function loadUnnamedStats(card) {
+  const id = card.dataset.unnamedPerson;
+  try {
+    const stats = await api(`/review-api/people/${id}/review-stats`);
+    card.querySelector('.face-count').textContent = stats.faces;
+    card.querySelector('.day-count').textContent = stats.days;
+    card.querySelector('.stats-state').textContent = `${stats.assets} Assets`;
+  } catch (e) {
+    card.querySelector('.stats-state').innerHTML = `<span class="stats-error">${esc(e.message)}</span>`;
+  }
+}
+
+async function hideUnnamedPerson(id, card) {
+  const button = card.querySelector('.hide-person');
+  button.disabled = true;
+  button.textContent = 'Verstecke…';
+  try {
+    await api(`/review-api/people/${id}/hide`, { method: 'PUT', body: '{}' });
+    const p = state.people.find((x) => x.id === id);
+    if (p) p.isHidden = true;
+    card.classList.add('removing');
+    setTimeout(() => { card.remove(); renderUnnamedCountOnly(); }, 180);
+    toast('Person versteckt');
+  } catch (e) {
+    button.disabled = false;
+    button.textContent = 'Verstecken';
+    toast(e.message);
+  }
+}
+
+function renderUnnamedCountOnly() {
+  state.unnamed = state.people.filter((p) => !String(p.name || '').trim() && !p.isHidden);
+  $('#unnamedCount').textContent = `${state.unnamed.length} unbenannte Personen`;
+}
+
+function openMergeDialog(sourceId) {
+  state.mergeSource = sourceId;
+  const source = state.people.find((p) => p.id === sourceId);
+  $('#mergeInfo').textContent = `Diese ${source?.name || 'unbenannte Person'} wird in die ausgewählte Zielperson zusammengeführt.`;
+  $('#mergeTargetSearch').value = '';
+  renderMergeTargets(state.people.filter((p) => p.id !== sourceId && !p.isHidden).slice(0, 60));
+  $('#mergeDialog').showModal();
+}
+
+function renderMergeTargets(people) {
+  $('#mergeTargets').innerHTML = people.map((p) => `<button type="button" class="target-item" data-merge-target="${p.id}"><img src="${thumbPerson(p.id)}" loading="lazy" alt=""><div><strong>${esc(p.name || 'Unbenannt')}</strong><div class="muted">${p.birthDate ? fmtDate(p.birthDate) : ''}</div></div></button>`).join('') || '<div class="muted">Keine Zielperson gefunden.</div>';
+  document.querySelectorAll('[data-merge-target]').forEach((b) => { b.onclick = () => mergeUnnamedPerson(b.dataset.mergeTarget); });
+}
+
+async function mergeUnnamedPerson(targetPersonId) {
+  const sourceId = state.mergeSource;
+  if (!sourceId) return;
+  try {
+    await api(`/review-api/people/${sourceId}/merge`, { method: 'POST', body: JSON.stringify({ targetPersonId }) });
+    state.people = state.people.filter((p) => p.id !== sourceId);
+    $('#mergeDialog').close();
+    document.querySelector(`[data-unnamed-person="${sourceId}"]`)?.remove();
+    renderUnnamedCountOnly();
+    toast('Personen zusammengeführt');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+$('#reviewTab').onclick = () => setChooserView('review');
+$('#unnamedTab').onclick = () => setChooserView('unnamed');
+$('#closeMergeDialog').onclick = () => $('#mergeDialog').close();
+$('#mergeTargetSearch').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  const pool = state.people.filter((p) => p.id !== state.mergeSource && !p.isHidden);
+  renderMergeTargets((!q ? pool : pool.filter((p) => (p.name || '').toLowerCase().includes(q))).slice(0, 80));
 });
 
 function resetReviewState() {

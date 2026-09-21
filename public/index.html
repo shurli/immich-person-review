@@ -13,10 +13,23 @@
   </header>
   <main>
     <section id="chooser" class="panel chooser">
+      <div class="view-tabs">
+        <button id="reviewTab" class="view-tab active" type="button">Person prüfen</button>
+        <button id="unnamedTab" class="view-tab" type="button">Unbenannte Personen</button>
+      </div>
+      <div id="namedChooser">
       <h1>Person auswählen</h1>
       <p>Wähle eine Person, deren Gesichtserkennung du chronologisch prüfen möchtest.</p>
       <input id="personSearch" type="search" placeholder="Person suchen…" autocomplete="off" />
       <div id="people" class="people-grid"></div>
+      </div>
+      <div id="unnamedChooser" class="hidden">
+        <div class="unnamed-head">
+          <div><h1>Unbenannte Personen</h1><p>Unbenannte, sichtbare Personen aus Immich. Kennzahlen werden beim Scrollen nachgeladen.</p></div>
+          <div id="unnamedCount" class="muted"></div>
+        </div>
+        <div id="unnamedPeople" class="unnamed-grid"></div>
+      </div>
     </section>
 
     <section id="review" class="review hidden">
@@ -47,6 +60,15 @@
         <h3>Neue Person</h3>
         <div class="row"><input id="newPersonName" placeholder="Name" /><input id="newPersonBirthDate" type="date" /><button id="createPersonBtn" class="btn">Anlegen & zuweisen</button></div>
       </div>
+    </form>
+  </dialog>
+
+  <dialog id="mergeDialog">
+    <form method="dialog" class="dialog-card" onsubmit="return false">
+      <div class="dialog-head"><h2>Person zusammenführen</h2><button id="closeMergeDialog" class="icon-btn" aria-label="Schließen">×</button></div>
+      <p id="mergeInfo" class="muted"></p>
+      <input id="mergeTargetSearch" type="search" placeholder="Zielperson suchen…" autocomplete="off" />
+      <div id="mergeTargets" class="target-list"></div>
     </form>
   </dialog>
 
