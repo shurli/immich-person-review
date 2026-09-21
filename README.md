@@ -3,7 +3,7 @@
 ## Version 0.3.0
 
 - Pro Face gibt es jetzt **„Markierung entfernen“**. Dabei wird über die stabile Immich-API `DELETE /faces/{id}` genau dieses Face entfernt, ohne es einer anderen Person zuzuweisen.
-- Batch-Aktion **„Alle „vor Geburt“ entfernen“** für Personen mit Geburtsdatum. Sie sucht paginiert alle passenden Assets, sammelt die Treffer zuerst vollständig und löscht anschließend die Face-Markierungen.
+- Batch-Aktion **„Alle „vor Geburt“ Zuordnungen lösen“** für Personen mit Geburtsdatum. Sie sucht paginiert alle passenden Assets, sammelt die Treffer zuerst vollständig und löst anschließend nur die Personenzuordnungen; die Face-Markierungen bleiben erhalten.
 - Für die Löschfunktionen ist zusätzlich die API-Berechtigung `face.delete` erforderlich.
 
 ### Bereits seit 0.2.0
@@ -38,7 +38,7 @@ Für den Review-Betrieb mindestens:
 - `asset.view`
 - `face.read`
 - `face.update`
-- `face.delete` (für „Markierung entfernen“ und den Batch „vor Geburt“)
+- `face.delete` (nur für „Markierung entfernen“)
 
 ## Start mit Docker Compose
 
@@ -105,7 +105,7 @@ Der Browser kennt den Immich API-Key nicht. Bilder werden ebenfalls über den Re
 - Bei sehr großen Personen-Clustern werden die Assets serverseitig seitenweise geladen; Face-Daten werden nur in der Nähe des Viewports geladen.
 - „Markierung entfernen“ löscht das Face-Objekt über die offizielle Immich-API.
 - „Zuordnung lösen“ behält das Face bei und entfernt nur die Personenzuordnung. Weil Immich aktuell keinen direkten Public-API-Endpunkt für `personId = null` anbietet, verwendet die App ausschließlich offizielle API-Aufrufe: temporäre versteckte Person anlegen, Face dorthin umhängen, temporäre Person löschen und anschließend verifizieren, dass dasselbe Face mit `person: null` erhalten blieb.
-- Der „vor Geburt“-Batch nutzt `takenBefore` in `POST /search/metadata`, sammelt zuerst alle Assets und beginnt erst danach mit dem Löschen. Dadurch verschiebt die laufende Mutation nicht die Such-Pagination.
+- Der „vor Geburt“-Batch nutzt `takenBefore` in `POST /search/metadata`, sammelt zuerst alle Assets und beginnt erst danach mit dem Lösen der Zuordnungen. Dadurch verschiebt die laufende Mutation nicht die Such-Pagination. Die Face-Markierungen bleiben bestehen.
 
 
 ## v0.4.0

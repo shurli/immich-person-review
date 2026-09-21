@@ -161,7 +161,7 @@ function updateBatchButton() {
   const hasBirthDate = Boolean(state.person?.birthDate);
   button.classList.toggle('hidden', !hasBirthDate);
   button.disabled = !hasBirthDate;
-  if (!button.dataset.running) button.textContent = 'Alle „vor Geburt“ entfernen';
+  if (!button.dataset.running) button.textContent = 'Alle „vor Geburt“ Zuordnungen lösen';
 }
 
 function updatePersonMeta() {
@@ -479,10 +479,10 @@ async function runBatchBeforeBirth() {
       toast('Keine Zuordnungen vor der Geburt gefunden.');
       return;
     }
-    if (!window.confirm(`${assets.length} Foto${assets.length === 1 ? '' : 's'} liegen vor dem Geburtsdatum. Die Face-Markierung dieser Person wird dort dauerhaft entfernt. Fortfahren?`)) return;
+    if (!window.confirm(`${assets.length} Foto${assets.length === 1 ? '' : 's'} liegen vor dem Geburtsdatum. Die Face-Markierungen bleiben erhalten; nur die Zuordnung zu ${state.person.name || 'dieser Person'} wird gelöst. Fortfahren?`)) return;
 
     let done = 0;
-    let removed = 0;
+    let detached = 0;
     let failed = 0;
     let cursor = 0;
     const worker = async () => {
@@ -493,20 +493,23 @@ async function runBatchBeforeBirth() {
           const faces = await api(`/review-api/assets/${asset.id}/faces`);
           const matching = faces.filter((f) => f.person?.id === personId || f.personId === personId);
           for (const face of matching) {
-            await api(`/review-api/faces/${face.id}`, { method: 'DELETE' });
-            removed++;
+            await api(`/review-api/faces/${face.id}/unassign`, {
+              method: 'POST',
+              body: JSON.stringify({ assetId: asset.id }),
+            });
+            detached++;
           }
         } catch {
           failed++;
         } finally {
           done++;
-          button.textContent = `Entferne ${done}/${assets.length}…`;
+          button.textContent = `Löse Zuordnungen ${done}/${assets.length}…`;
         }
       }
     };
     await Promise.all(Array.from({ length: Math.min(4, assets.length) }, () => worker()));
 
-    toast(`${removed} Face-Markierung${removed === 1 ? '' : 'en'} entfernt${failed ? ` · ${failed} Fehler` : ''}`);
+    toast(`${detached} Zuordnung${detached === 1 ? '' : 'en'} gelöst · Face-Markierungen bleiben erhalten${failed ? ` · ${failed} Fehler` : ''}`);
     await selectPerson(personId);
   } catch (e) {
     toast(e.message);
