@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Pool } from 'pg';
-import { buildVectorCluster } from './cluster-math.mjs';
+import { buildVectorCluster, projectEmbeddingToCluster } from './cluster-math.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
@@ -19,6 +19,8 @@ const unnamedStatsCache = new Map();
 const UNNAMED_STATS_TTL_MS = 5 * 60 * 1000;
 const duplicateFaceScans = new Map();
 const DUPLICATE_SCAN_TTL_MS = 15 * 60 * 1000;
+const adjacentPersonCache = new Map();
+const ADJACENT_PERSON_TTL_MS = 2 * 60 * 1000;
 
 const immichDbUrl = process.env.IMMICH_DB_URL || '';
 const immichDbHost = process.env.IMMICH_DB_HOST || process.env.DB_HOSTNAME || '';
@@ -30,6 +32,14 @@ const immichDbSsl = /^(1|true|yes|required)$/i.test(process.env.IMMICH_DB_SSL ||
 const vectorDbConfigured = Boolean(immichDbUrl || immichDbHost);
 const vectorClusterMaxFacesValue = Number(process.env.VECTOR_CLUSTER_MAX_FACES || 30000);
 const vectorClusterMaxFaces = Number.isFinite(vectorClusterMaxFacesValue) ? Math.max(100, vectorClusterMaxFacesValue) : 30000;
+const vectorClusterMaxAdjacentPeopleValue = Number(process.env.VECTOR_CLUSTER_MAX_ADJACENT_PEOPLE || 50);
+const vectorClusterMaxAdjacentPeople = Number.isFinite(vectorClusterMaxAdjacentPeopleValue)
+  ? Math.min(200, Math.max(1, Math.floor(vectorClusterMaxAdjacentPeopleValue)))
+  : 50;
+const vectorClusterAdjacentCandidatePoolValue = Number(process.env.VECTOR_CLUSTER_ADJACENT_CANDIDATE_POOL || 500);
+const vectorClusterAdjacentCandidatePool = Number.isFinite(vectorClusterAdjacentCandidatePoolValue)
+  ? Math.min(1000, Math.max(vectorClusterMaxAdjacentPeople + 1, Math.floor(vectorClusterAdjacentCandidatePoolValue)))
+  : 500;
 const vectorClusterDefaultRadiusRaw = process.env.VECTOR_CLUSTER_DEFAULT_RADIUS;
 const vectorClusterDefaultRadius = vectorClusterDefaultRadiusRaw == null || vectorClusterDefaultRadiusRaw === ''
   ? undefined
@@ -80,6 +90,8 @@ async function vectorDatabaseInfo({ probe = false } = {}) {
     port: immichDbUrl ? null : (Number.isFinite(immichDbPort) ? immichDbPort : 5432),
     database: immichDbUrl ? null : immichDbName,
     maxFaces: vectorClusterMaxFaces,
+    maxAdjacentPeople: vectorClusterMaxAdjacentPeople,
+    adjacentCandidatePool: vectorClusterAdjacentCandidatePool,
   };
   if (!probe || !vectorPool) return info;
   try {
@@ -109,7 +121,7 @@ async function vectorDatabaseInfo({ probe = false } = {}) {
 }
 
 function isUuid(value) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
 }
 
 function requireVectorDatabase() {
@@ -200,6 +212,121 @@ async function getPersonVectorCluster(personId) {
       immichDefault: 0.5,
     },
   };
+}
+
+async function loadClosestPersonCandidates(personId) {
+  const response = await immichFetch(
+    `/people?page=1&size=${encodeURIComponent(vectorClusterAdjacentCandidatePool)}&withHidden=true&closestPersonId=${encodeURIComponent(personId)}`,
+  );
+  if (!response.ok) {
+    const text = await response.text();
+    const error = new Error(`Angrenzende Personen konnten nicht von Immich geladen werden: HTTP ${response.status} ${text.slice(0, 250)}`);
+    error.status = response.status;
+    throw error;
+  }
+  const data = await response.json();
+  const people = Array.isArray(data) ? data : (Array.isArray(data.people) ? data.people : []);
+  return people.filter((person) => person?.id && person.id !== personId);
+}
+
+async function loadAdjacentPersonCentroids(personIds) {
+  const pool = requireVectorDatabase();
+  if (!personIds.length) return [];
+  const result = await pool.query(
+    `SELECT
+        af."personId",
+        count(*)::int AS "faceCount",
+        avg(fs.embedding)::text AS embedding
+       FROM asset_face af
+       JOIN face_search fs ON fs."faceId" = af.id
+       JOIN asset a ON a.id = af."assetId"
+      WHERE af."personId" = ANY($1::uuid[])
+        AND af."deletedAt" IS NULL
+        AND af."isVisible" IS TRUE
+        AND a."deletedAt" IS NULL
+      GROUP BY af."personId"`,
+    [personIds],
+  );
+  return result.rows;
+}
+
+async function getAdjacentPeople(personId, requestedLimit, { force = false } = {}) {
+  const now = Date.now();
+  for (const [key, value] of adjacentPersonCache) {
+    if (now - value.createdAt >= ADJACENT_PERSON_TTL_MS) adjacentPersonCache.delete(key);
+  }
+  const limit = Math.min(
+    vectorClusterMaxAdjacentPeople,
+    Math.max(1, Number.isFinite(Number(requestedLimit)) ? Math.floor(Number(requestedLimit)) : 8),
+  );
+  const cached = adjacentPersonCache.get(personId);
+  if (!force && cached && now - cached.createdAt < ADJACENT_PERSON_TTL_MS) {
+    return {
+      person: cached.person,
+      limit,
+      candidatePool: cached.candidatePool,
+      available: cached.people.length,
+      people: cached.people.slice(0, limit),
+      cached: true,
+    };
+  }
+
+  const cluster = await getPersonVectorCluster(personId);
+  if (!cluster.points.length) {
+    return {
+      person: cluster.person,
+      limit,
+      candidatePool: 0,
+      available: 0,
+      people: [],
+      cached: false,
+    };
+  }
+
+  const candidates = await loadClosestPersonCandidates(personId);
+  const metadata = new Map(candidates.map((person) => [person.id, person]));
+  const centroids = await loadAdjacentPersonCentroids([...metadata.keys()]);
+  const people = [];
+  for (const row of centroids) {
+    const person = metadata.get(row.personId);
+    if (!person || !row.embedding) continue;
+    try {
+      people.push(projectEmbeddingToCluster(row.embedding, cluster, {
+        id: person.id,
+        name: person.name || '',
+        birthDate: person.birthDate || null,
+        isHidden: Boolean(person.isHidden),
+        isFavorite: Boolean(person.isFavorite),
+        faceCount: Number(row.faceCount || 0),
+      }));
+    } catch (error) {
+      console.warn(`Adjacent person ${person.id} skipped:`, error.message);
+    }
+  }
+  people.sort((a, b) => a.distance - b.distance || String(a.name).localeCompare(String(b.name), 'de'));
+
+  const cacheEntry = {
+    createdAt: Date.now(),
+    person: cluster.person,
+    candidatePool: candidates.length,
+    people,
+  };
+  adjacentPersonCache.set(personId, cacheEntry);
+  while (adjacentPersonCache.size > 24) {
+    adjacentPersonCache.delete(adjacentPersonCache.keys().next().value);
+  }
+  return {
+    person: cluster.person,
+    limit,
+    candidatePool: candidates.length,
+    available: people.length,
+    people: people.slice(0, limit),
+    cached: false,
+  };
+}
+
+function invalidateAdjacentPeople() {
+  adjacentPersonCache.clear();
 }
 
 async function validateClusterFaceIds(personId, faceIds) {
@@ -584,7 +711,9 @@ async function handleApi(req, res, url) {
       const body = await parseBody(req);
       if (!body.scanId) return json(res, 400, { message: 'scanId is required' });
       try {
-        return json(res, 200, await applyDuplicatePersonFaceScan(body.scanId));
+        const result = await applyDuplicatePersonFaceScan(body.scanId);
+        if (result.removed) invalidateAdjacentPeople();
+        return json(res, 200, result);
       } catch (error) {
         if (error.status) return json(res, error.status, { message: error.message });
         throw error;
@@ -622,6 +751,27 @@ async function handleApi(req, res, url) {
       }
     }
 
+    const vectorNeighborsMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/vector-neighbors$/i);
+    if (req.method === 'GET' && vectorNeighborsMatch) {
+      const personId = vectorNeighborsMatch[1];
+      if (!isUuid(personId)) return json(res, 400, { message: 'Ungültige Personen-ID' });
+      const limit = Number(url.searchParams.get('limit') || 8);
+      const force = /^(1|true|yes)$/i.test(url.searchParams.get('force') || '');
+      try {
+        return json(res, 200, await getAdjacentPeople(personId, limit, { force }));
+      } catch (error) {
+        if (error.response) return proxyJson(res, error.response);
+        if (error.status && error.status < 500) return json(res, error.status, { message: error.message, code: error.code });
+        if (error.code && String(error.code).startsWith('42')) {
+          return json(res, 503, { message: `Personenmittelpunkte konnten mit dem Immich-Datenbankschema oder den Leserechten nicht berechnet werden: ${error.message}`, code: 'VECTOR_DB_SCHEMA_ERROR' });
+        }
+        if (['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET', 'EHOSTUNREACH', 'SELF_SIGNED_CERT_IN_CHAIN', '28P01', '3D000'].includes(error.code)) {
+          return json(res, 503, { message: `PostgreSQL ist für angrenzende Personen nicht erreichbar: ${error.message}`, code: 'VECTOR_DB_CONNECTION_ERROR' });
+        }
+        throw error;
+      }
+    }
+
     const vectorClusterUnassignMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/vector-cluster\/unassign$/i);
     if (req.method === 'POST' && vectorClusterUnassignMatch) {
       const personId = vectorClusterUnassignMatch[1];
@@ -636,6 +786,7 @@ async function handleApi(req, res, url) {
         const requestedUnique = new Set(body.faceIds.map(String));
         if (!validated.length) return json(res, 409, { message: 'Keines der ausgewählten Faces ist dieser Person noch zugeordnet.' });
         const result = await unassignFacesWithTemporaryPerson(validated);
+        invalidateAdjacentPeople();
         return json(res, 200, {
           ...result,
           ok: result.failed === 0 && validated.length === requestedUnique.size,
@@ -714,6 +865,7 @@ async function handleApi(req, res, url) {
       if (r.ok) {
         unnamedStatsCache.delete(sourceId);
         unnamedStatsCache.delete(body.targetPersonId);
+        invalidateAdjacentPeople();
       }
       return proxyJson(res, r);
     }
@@ -780,10 +932,12 @@ async function handleApi(req, res, url) {
     if (req.method === 'PUT' && reassignMatch) {
       const body = await parseBody(req);
       if (!body.personId) return json(res, 400, { message: 'personId is required' });
-      return proxyJson(res, await immichFetch(`/faces/${body.personId}`, {
+      const response = await immichFetch(`/faces/${body.personId}`, {
         method: 'PUT',
         body: JSON.stringify({ id: reassignMatch[1] }),
-      }));
+      });
+      if (response.ok) invalidateAdjacentPeople();
+      return proxyJson(res, response);
     }
 
     const unassignFaceMatch = url.pathname.match(/^\/review-api\/faces\/([0-9a-f-]+)\/unassign$/i);
@@ -830,6 +984,7 @@ async function handleApi(req, res, url) {
         const detached = faces.find((face) => face.id === faceId);
         if (!detached) return json(res, 409, { message: 'Zuordnung gelöst, aber Immich liefert die Face-Markierung danach nicht mehr zurück.' });
         if (detached.person != null || detached.personId != null) return json(res, 409, { message: 'Face ist noch einer Person zugeordnet.' });
+        invalidateAdjacentPeople();
         return json(res, 200, { ok: true, face: detached });
       } catch (error) {
         if (temporaryPersonId) {
@@ -843,10 +998,12 @@ async function handleApi(req, res, url) {
     if (req.method === 'DELETE' && deleteFaceMatch) {
       // Immich has no stable "unassign person" endpoint. Deleting the face removes
       // this face marker/association from the asset without assigning another person.
-      return proxyJson(res, await immichFetch(`/faces/${deleteFaceMatch[1]}`, {
+      const response = await immichFetch(`/faces/${deleteFaceMatch[1]}`, {
         method: 'DELETE',
         body: JSON.stringify({ force: true }),
-      }));
+      });
+      if (response.ok) invalidateAdjacentPeople();
+      return proxyJson(res, response);
     }
 
     if (req.method === 'POST' && url.pathname === '/review-api/people') {

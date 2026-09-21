@@ -37,8 +37,10 @@ const state = {
   clusterLoadedFor: null,
   clusterLoading: false,
   clusterPlotPoints: [],
+  clusterNeighborPlotPoints: [],
   clusterPlotGeometry: null,
   clusterPointView: new Map(),
+  clusterNeighborView: new Map(),
   clusterDynamicStats: null,
   clusterCenter: { x: 0, y: 0 },
   clusterCenterMaxDistance: 0,
@@ -51,7 +53,20 @@ const state = {
   clusterCenterDragGeometry: null,
   clusterCenterDragStart: null,
   clusterHoverFaceId: null,
+  clusterHoverKey: null,
   clusterImageCache: new Map(),
+  clusterNeighborsEnabled: false,
+  clusterNeighborCount: 8,
+  clusterNeighborMax: 50,
+  clusterNeighbors: [],
+  clusterNeighborLoadedFor: null,
+  clusterNeighborQueryLimit: 0,
+  clusterNeighborAvailable: 0,
+  clusterNeighborCandidatePool: 0,
+  clusterNeighborLoading: false,
+  clusterNeighborError: '',
+  clusterNeighborRequestToken: 0,
+  clusterActiveNeighbor: null,
   timelineStale: false,
 };
 
@@ -132,6 +147,7 @@ async function init() {
     $('#appVersion').textContent = s.version ? `v${s.version}` : 'v?';
     state.immichUrl = String(s.immichExternalUrl || s.immichUrl || '').replace(/\/$/, '');
     state.vectorDatabase = s.vectorDatabase || { configured: false };
+    initializeClusterNeighborPreferences();
     const clusterBadge = $('#clusterDbBadge');
     const databaseReady = state.vectorDatabase.configured
       && state.vectorDatabase.reachable !== false
@@ -740,8 +756,10 @@ function resetClusterState() {
   state.clusterLoadedFor = null;
   state.clusterLoading = false;
   state.clusterPlotPoints = [];
+  state.clusterNeighborPlotPoints = [];
   state.clusterPlotGeometry = null;
   state.clusterPointView.clear();
+  state.clusterNeighborView.clear();
   state.clusterDynamicStats = null;
   state.clusterCenter = { x: 0, y: 0 };
   state.clusterCenterMaxDistance = 0;
@@ -753,12 +771,23 @@ function resetClusterState() {
   state.clusterCenterDragGeometry = null;
   state.clusterCenterDragStart = null;
   state.clusterHoverFaceId = null;
+  state.clusterHoverKey = null;
+  state.clusterNeighbors = [];
+  state.clusterNeighborLoadedFor = null;
+  state.clusterNeighborQueryLimit = 0;
+  state.clusterNeighborAvailable = 0;
+  state.clusterNeighborCandidatePool = 0;
+  state.clusterNeighborLoading = false;
+  state.clusterNeighborError = '';
+  state.clusterNeighborRequestToken++;
+  state.clusterActiveNeighbor = null;
   if (state.clusterCenterDragFrame) cancelAnimationFrame(state.clusterCenterDragFrame);
   state.clusterCenterDragFrame = 0;
   state.clusterImageCache.clear();
   clearTimeout(clusterOutlierRenderTimer);
   clusterResizeObserver?.disconnect();
   $('#clusterCanvas')?.classList.remove('dragging-center', 'center-hover');
+  $('#clusterNeighborDialog')?.close?.();
   $('#clusterLoading')?.classList.remove('hidden');
   $('#clusterError')?.classList.add('hidden');
   $('#clusterDashboard')?.classList.add('hidden');
@@ -811,6 +840,7 @@ async function loadVectorCluster({ force = false } = {}) {
   if (!state.person || state.clusterLoading) return;
   if (!force && state.cluster && state.clusterLoadedFor === state.person.id) {
     renderVectorCluster({ resetRadius: false, resetCenter: false });
+    if (state.clusterNeighborsEnabled) loadClusterNeighbors();
     return;
   }
   if (!state.vectorDatabase.configured) {
@@ -831,11 +861,137 @@ async function loadVectorCluster({ force = false } = {}) {
     state.clusterVisibleCount = 80;
     state.clusterImageCache.clear();
     renderVectorCluster({ resetRadius: !preserveControls, resetCenter: !preserveControls });
+    if (state.clusterNeighborsEnabled) loadClusterNeighbors({ force });
   } catch (error) {
     showClusterError(error.message);
   } finally {
     state.clusterLoading = false;
     $('#clusterLoading').classList.add('hidden');
+  }
+}
+
+const CLUSTER_NEIGHBOR_COLORS = ['#c084fc', '#22d3ee', '#facc15', '#f472b6', '#a3e635', '#fb7185', '#60a5fa', '#fb923c', '#2dd4bf', '#e879f9'];
+
+function initializeClusterNeighborPreferences() {
+  const configuredMax = Number(state.vectorDatabase?.maxAdjacentPeople || 50);
+  state.clusterNeighborMax = Number.isFinite(configuredMax) ? Math.max(1, Math.floor(configuredMax)) : 50;
+  try {
+    state.clusterNeighborsEnabled = localStorage.getItem('immich-review.cluster-neighbors.enabled') === 'true';
+    const storedCount = Number(localStorage.getItem('immich-review.cluster-neighbors.count'));
+    if (Number.isFinite(storedCount)) state.clusterNeighborCount = storedCount;
+  } catch {}
+  state.clusterNeighborCount = Math.min(state.clusterNeighborMax, Math.max(1, Math.floor(state.clusterNeighborCount || 8)));
+  const range = $('#clusterNeighborCountRange');
+  const input = $('#clusterNeighborCountInput');
+  range.max = String(state.clusterNeighborMax);
+  input.max = String(state.clusterNeighborMax);
+  range.value = String(state.clusterNeighborCount);
+  input.value = String(state.clusterNeighborCount);
+  $('#clusterNeighborsEnabled').checked = state.clusterNeighborsEnabled;
+  updateClusterNeighborUi();
+}
+
+function clusterNeighborColor(index) {
+  return CLUSTER_NEIGHBOR_COLORS[index % CLUSTER_NEIGHBOR_COLORS.length];
+}
+
+function visibleClusterNeighbors() {
+  if (!state.clusterNeighborsEnabled) return [];
+  return state.clusterNeighbors.slice(0, state.clusterNeighborCount);
+}
+
+function updateClusterNeighborUi(message = '') {
+  const enabled = state.clusterNeighborsEnabled;
+  $('#clusterNeighborsEnabled').checked = enabled;
+  $('#clusterNeighborCountRange').disabled = !enabled;
+  $('#clusterNeighborCountInput').disabled = !enabled;
+  $('#clusterNeighborCountRange').value = String(state.clusterNeighborCount);
+  $('#clusterNeighborCountInput').value = String(state.clusterNeighborCount);
+  $('#clusterNeighborLegend').classList.toggle('hidden', !enabled);
+  const status = $('#clusterNeighborStatus');
+  if (message) {
+    status.textContent = message;
+  } else if (!enabled) {
+    status.textContent = 'Ausgeblendet';
+  } else if (state.clusterNeighborLoading) {
+    status.textContent = 'Angrenzende Personen werden berechnet…';
+  } else if (state.clusterNeighborError) {
+    status.textContent = `Fehler: ${state.clusterNeighborError}`;
+  } else if (state.clusterNeighborLoadedFor === state.person?.id) {
+    const shown = visibleClusterNeighbors().length;
+    status.textContent = `${shown} angezeigt · ${state.clusterNeighborAvailable} berechnet · ${state.clusterNeighborCandidatePool} Immich-Kandidaten`;
+  } else {
+    status.textContent = 'Noch nicht geladen';
+  }
+}
+
+function setClusterNeighborsEnabled(enabled) {
+  state.clusterNeighborsEnabled = Boolean(enabled);
+  state.clusterNeighborError = '';
+  if (!state.clusterNeighborsEnabled) state.clusterNeighborRequestToken++;
+  try { localStorage.setItem('immich-review.cluster-neighbors.enabled', String(state.clusterNeighborsEnabled)); } catch {}
+  updateClusterNeighborUi();
+  if (state.clusterNeighborsEnabled && state.cluster) loadClusterNeighbors();
+  else {
+    state.clusterNeighborPlotPoints = [];
+    hideClusterTooltip();
+    drawVectorCluster();
+  }
+}
+
+function setClusterNeighborCount(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return;
+  state.clusterNeighborCount = Math.min(state.clusterNeighborMax, Math.max(1, Math.floor(numeric)));
+  try { localStorage.setItem('immich-review.cluster-neighbors.count', String(state.clusterNeighborCount)); } catch {}
+  updateClusterNeighborUi();
+  if (!state.clusterNeighborsEnabled || !state.cluster) return;
+  if (state.clusterNeighborLoadedFor !== state.person?.id || state.clusterNeighborQueryLimit < state.clusterNeighborCount) {
+    loadClusterNeighbors();
+  } else {
+    recomputeClusterNeighborView();
+    drawVectorCluster();
+  }
+}
+
+async function loadClusterNeighbors({ force = false } = {}) {
+  if (!state.person || !state.cluster || !state.clusterNeighborsEnabled) return;
+  if (!force
+      && state.clusterNeighborLoadedFor === state.person.id
+      && state.clusterNeighborQueryLimit >= state.clusterNeighborCount) {
+    recomputeClusterNeighborView();
+    updateClusterNeighborUi();
+    drawVectorCluster();
+    return;
+  }
+
+  const personId = state.person.id;
+  const token = ++state.clusterNeighborRequestToken;
+  state.clusterNeighborLoading = true;
+  state.clusterNeighborError = '';
+  updateClusterNeighborUi();
+  try {
+    const data = await api(`/review-api/people/${personId}/vector-neighbors?limit=${state.clusterNeighborCount}${force ? '&force=true' : ''}`);
+    if (token !== state.clusterNeighborRequestToken || personId !== state.person?.id) return;
+    state.clusterNeighbors = Array.isArray(data.people) ? data.people : [];
+    state.clusterNeighborLoadedFor = personId;
+    state.clusterNeighborQueryLimit = Number(data.limit || state.clusterNeighborCount);
+    state.clusterNeighborAvailable = Number(data.available || state.clusterNeighbors.length);
+    state.clusterNeighborCandidatePool = Number(data.candidatePool || 0);
+    recomputeClusterNeighborView();
+    updateClusterNeighborUi();
+    drawVectorCluster();
+  } catch (error) {
+    if (token !== state.clusterNeighborRequestToken) return;
+    state.clusterNeighbors = [];
+    state.clusterNeighborPlotPoints = [];
+    state.clusterNeighborError = error.message;
+    drawVectorCluster();
+  } finally {
+    if (token === state.clusterNeighborRequestToken) {
+      state.clusterNeighborLoading = false;
+      updateClusterNeighborUi();
+    }
   }
 }
 
@@ -866,6 +1022,22 @@ function clusterViewForPoint(point) {
     x: Number(point.x) || 0,
     y: Number(point.y) || 0,
   };
+}
+
+function clusterNeighborViewForPoint(point) {
+  return state.clusterNeighborView.get(point.id) || {
+    distance: distanceToClusterCenter(point, state.clusterCenter),
+    x: Number(point.x) || 0,
+    y: Number(point.y) || 0,
+  };
+}
+
+function recomputeClusterNeighborView() {
+  const view = new Map();
+  for (const person of state.clusterNeighbors) {
+    view.set(person.id, projectPointAroundClusterCenter(person, state.clusterCenter));
+  }
+  state.clusterNeighborView = view;
 }
 
 function currentClusterDistance(point) {
@@ -911,6 +1083,7 @@ function recomputeClusterPointView({ updateVectorText = true } = {}) {
   distances.sort((a, b) => a - b);
   const meanDistance = distances.length ? distances.reduce((sum, value) => sum + value, 0) / distances.length : 0;
   state.clusterPointView = view;
+  recomputeClusterNeighborView();
   state.clusterDynamicStats = {
     count: distances.length,
     minDistance: distances[0] || 0,
@@ -1245,6 +1418,11 @@ function drawVectorCluster() {
     const view = clusterViewForPoint(point);
     maxWorldDistance = Math.max(maxWorldDistance, Math.hypot(view.x, view.y));
   }
+  const visibleNeighbors = visibleClusterNeighbors();
+  for (const person of visibleNeighbors) {
+    const view = clusterNeighborViewForPoint(person);
+    maxWorldDistance = Math.max(maxWorldDistance, Math.hypot(view.x, view.y));
+  }
   maxWorldDistance = Math.max(0.01, maxWorldDistance * 1.08);
   const scale = state.clusterCenterDragging && state.clusterCenterDragGeometry?.scale
     ? state.clusterCenterDragGeometry.scale
@@ -1320,6 +1498,41 @@ function drawVectorCluster() {
     }
   }
 
+  const plottedNeighbors = visibleNeighbors.map((person, index) => {
+    const view = clusterNeighborViewForPoint(person);
+    return {
+      person,
+      view,
+      color: clusterNeighborColor(index),
+      px: originX + view.x * scale,
+      py: originY - view.y * scale,
+    };
+  });
+
+  for (let index = plottedNeighbors.length - 1; index >= 0; index--) {
+    const item = plottedNeighbors[index];
+    const hovered = state.clusterHoverKey === `person:${item.person.id}`;
+    ctx.save();
+    ctx.translate(item.px, item.py);
+    ctx.rotate(Math.PI / 4);
+    ctx.fillStyle = item.color;
+    ctx.strokeStyle = hovered ? '#ffffff' : 'rgba(255,255,255,.86)';
+    ctx.lineWidth = hovered ? 3 : 1.5;
+    const size = hovered ? 8.5 : 7;
+    ctx.beginPath();
+    ctx.rect(-size, -size, size * 2, size * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#f8fbff';
+    ctx.font = 'bold 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(index + 1), item.px, item.py);
+  }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
   // Original normalized arithmetic mean μ.
   ctx.strokeStyle = '#9db6d1';
   ctx.lineWidth = 1.6;
@@ -1351,6 +1564,7 @@ function drawVectorCluster() {
   ctx.restore();
 
   state.clusterPlotPoints = plotted;
+  state.clusterNeighborPlotPoints = plottedNeighbors;
   state.clusterPlotGeometry = { originX, originY, centerPx, centerPy, scale, plotRadius, width, height };
 }
 
@@ -1380,9 +1594,26 @@ function nearestClusterPlotPoint(event) {
   return nearestDistance <= 12 ? { item: nearest, x, y } : null;
 }
 
+function nearestClusterNeighborPlotPoint(event) {
+  const { x, y } = clusterCanvasCoordinates(event);
+  let nearest = null;
+  let nearestDistance = Infinity;
+  for (const item of state.clusterNeighborPlotPoints) {
+    const distance = Math.hypot(item.px - x, item.py - y);
+    if (distance < nearestDistance) {
+      nearest = item;
+      nearestDistance = distance;
+    }
+  }
+  return nearestDistance <= 15 ? { item: nearest, x, y } : null;
+}
+
 function hideClusterTooltip() {
+  const hadNeighborHover = String(state.clusterHoverKey || '').startsWith('person:');
   state.clusterHoverFaceId = null;
+  state.clusterHoverKey = null;
   $('#clusterTooltip').classList.add('hidden');
+  if (hadNeighborHover && state.clusterNeighborPlotPoints.length) drawVectorCluster();
 }
 
 function positionClusterTooltip(hit) {
@@ -1399,19 +1630,39 @@ function showClusterTooltip(event) {
     hideClusterTooltip();
     return;
   }
-  const hit = nearestClusterPlotPoint(event);
+  const neighborHit = nearestClusterNeighborPlotPoint(event);
   const tooltip = $('#clusterTooltip');
+  if (neighborHit) {
+    const person = neighborHit.item.person;
+    const hoverKey = `person:${person.id}`;
+    if (state.clusterHoverKey !== hoverKey) {
+      state.clusterHoverKey = hoverKey;
+      state.clusterHoverFaceId = null;
+      tooltip.innerHTML = `<img class="cluster-tooltip-thumb cluster-tooltip-person-thumb" src="${thumbPerson(person.id)}" alt=""><div class="cluster-tooltip-copy"><strong>${esc(person.name || 'Unbenannte Person')}</strong><span class="neighbor-distance">Personenmittelpunkt · Distanz ${formatClusterDistance(neighborHit.item.view.distance)}</span><span>${Number(person.faceCount || 0)} Faces mit Embedding${person.isHidden ? ' · verborgen' : ''}</span><span class="cluster-tooltip-open">Klicken: in Immich öffnen oder zusammenführen</span></div>`;
+      tooltip.classList.remove('hidden');
+      drawVectorCluster();
+    } else {
+      tooltip.classList.remove('hidden');
+    }
+    positionClusterTooltip(neighborHit);
+    return;
+  }
+
+  const hit = nearestClusterPlotPoint(event);
   if (!hit) {
     hideClusterTooltip();
     return;
   }
   const point = hit.item.point;
-  if (state.clusterHoverFaceId !== point.faceId) {
+  const hoverKey = `face:${point.faceId}`;
+  if (state.clusterHoverKey !== hoverKey) {
+    state.clusterHoverKey = hoverKey;
     state.clusterHoverFaceId = point.faceId;
     const date = point.localDateTime || point.fileCreatedAt || point.createdAt;
     tooltip.innerHTML = `<canvas class="cluster-tooltip-thumb" width="112" height="112"></canvas><div class="cluster-tooltip-copy"><strong>${esc(point.originalFileName || point.assetId)}</strong><span class="distance">Distanz ${formatClusterDistance(hit.item.view.distance)}</span><span>${esc(formatClusterDate(date))}</span>${hit.item.outside ? '<span>außerhalb des Radius</span>' : '<span>innerhalb des Radius</span>'}${state.immichUrl ? '<span class="cluster-tooltip-open">↗ in Immich öffnen: Punkt anklicken, dann Karte verwenden</span>' : ''}</div>`;
     tooltip.classList.remove('hidden');
     paintClusterFaceCrop(tooltip.querySelector('canvas'), point);
+    if (state.clusterNeighborPlotPoints.length) drawVectorCluster();
   } else {
     tooltip.classList.remove('hidden');
   }
@@ -1484,12 +1735,69 @@ function finishClusterCenterDrag(event) {
   if (event.type === 'pointercancel') state.clusterCenterDragMoved = false;
 }
 
+function openClusterNeighborDialog(person) {
+  if (!person || !state.person) return;
+  state.clusterActiveNeighbor = person;
+  const view = clusterNeighborViewForPoint(person);
+  $('#clusterNeighborDialogThumb').src = thumbPerson(person.id, Date.now());
+  $('#clusterNeighborDialogName').textContent = person.name || 'Unbenannte Person';
+  $('#clusterNeighborDialogMeta').textContent = `${Number(person.faceCount || 0)} Faces mit Embedding · Distanz ${formatClusterDistance(view.distance)}${person.isHidden ? ' · verborgen' : ''}`;
+  $('#clusterNeighborDialogCurrent').textContent = state.person.name || 'Aktuelle Person';
+  $('#clusterNeighborDialog').showModal();
+}
+
+async function mergeClusterNeighborIntoCurrentPerson() {
+  const source = state.clusterActiveNeighbor;
+  const target = state.person;
+  if (!source || !target) return;
+  const sourceName = source.name || 'Unbenannte Person';
+  const targetName = target.name || 'aktuelle Person';
+  if (!window.confirm(`${sourceName} vollständig mit ${targetName} zusammenführen?\n\nAlle Face-Zuordnungen der Nachbarperson werden der aktuellen Person zugeordnet. Die Nachbarperson wird anschließend in Immich entfernt.`)) return;
+
+  const button = $('#clusterMergeNeighborBtn');
+  const original = button.textContent;
+  button.disabled = true;
+  $('#clusterOpenNeighborBtn').disabled = true;
+  button.textContent = 'Wird zusammengeführt…';
+  try {
+    await api(`/review-api/people/${source.id}/merge`, {
+      method: 'POST',
+      body: JSON.stringify({ targetPersonId: target.id }),
+    });
+    state.timelineStale = true;
+    state.clusterNeighborRequestToken++;
+    state.clusterNeighbors = [];
+    state.clusterNeighborLoadedFor = null;
+    state.clusterNeighborQueryLimit = 0;
+    state.clusterNeighborAvailable = 0;
+    state.clusterNeighborCandidatePool = 0;
+    state.clusterNeighborView.clear();
+    state.clusterNeighborPlotPoints = [];
+    state.clusterActiveNeighbor = null;
+    $('#clusterNeighborDialog').close();
+    $('#selectedPersonThumb').src = thumbPerson(target.id, Date.now());
+    toast(`${sourceName} wurde mit ${targetName} zusammengeführt`);
+    await Promise.all([loadPeople(), loadVectorCluster({ force: true })]);
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+    $('#clusterOpenNeighborBtn').disabled = false;
+    button.textContent = original;
+  }
+}
+
 function selectClusterPointFromCanvas(event) {
   if (state.clusterCenterDragMoved) {
     state.clusterCenterDragMoved = false;
     return;
   }
   if (pointerNearClusterCenter(event)) return;
+  const neighborHit = nearestClusterNeighborPlotPoint(event);
+  if (neighborHit) {
+    openClusterNeighborDialog(neighborHit.item.person);
+    return;
+  }
   const hit = nearestClusterPlotPoint(event);
   if (!hit) return;
   const point = hit.item.point;
@@ -1580,6 +1888,10 @@ function exportVectorCluster() {
     centroid: state.cluster.centroid,
     originalStats: state.cluster.stats,
     currentStats: state.clusterDynamicStats,
+    adjacentPeople: visibleClusterNeighbors().map((person) => {
+      const view = clusterNeighborViewForPoint(person);
+      return { ...person, reviewDistance: view.distance, reviewX: view.x, reviewY: view.y };
+    }),
     points: state.cluster.points.map((point) => {
       const view = clusterViewForPoint(point);
       return { ...point, reviewDistance: view.distance, reviewX: view.x, reviewY: view.y };
@@ -1698,6 +2010,12 @@ $('#clusterPresetImmich').onclick = () => setClusterRadius(0.5);
 $('#clusterShowOutsideBtn').onclick = () => setClusterListMode('outside');
 $('#clusterShowInsideBtn').onclick = () => setClusterListMode('inside');
 $('#clusterShowAllBtn').onclick = () => setClusterListMode('all');
+$('#clusterNeighborsEnabled').onchange = (event) => setClusterNeighborsEnabled(event.target.checked);
+$('#clusterNeighborCountRange').addEventListener('input', (event) => setClusterNeighborCount(event.target.value));
+$('#clusterNeighborCountInput').addEventListener('change', (event) => setClusterNeighborCount(event.target.value));
+$('#clusterNeighborCountInput').addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') setClusterNeighborCount(event.currentTarget.value);
+});
 $('#clusterSelectAllBtn').onclick = () => {
   for (const point of getClusterListedPoints()) state.clusterSelected.add(point.faceId);
   updateClusterSelectionControls();
@@ -1724,6 +2042,11 @@ $('#clusterCanvas').addEventListener('pointerup', finishClusterCenterDrag);
 $('#clusterCanvas').addEventListener('pointercancel', finishClusterCenterDrag);
 $('#clusterCanvas').addEventListener('pointerleave', () => { if (!state.clusterCenterDragging) hideClusterTooltip(); });
 $('#clusterCanvas').addEventListener('click', selectClusterPointFromCanvas);
+$('#closeClusterNeighborDialog').onclick = () => $('#clusterNeighborDialog').close();
+$('#clusterOpenNeighborBtn').onclick = () => {
+  if (state.clusterActiveNeighbor) openImmichPerson(state.clusterActiveNeighbor.id);
+};
+$('#clusterMergeNeighborBtn').onclick = mergeClusterNeighborIntoCurrentPerson;
 
 $('#batchBeforeBirthBtn').onclick = () => runBatchBeforeBirth();
 $('#loadMoreBtn').onclick = () => loadNextPage();

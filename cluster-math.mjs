@@ -29,6 +29,51 @@ export function normalize(vector) {
   return result;
 }
 
+/**
+ * Projects one arbitrary embedding into an existing face cluster basis.
+ *
+ * This is used for adjacent-person centroids: the candidate embedding is
+ * L2-normalized and expressed through the current person's centroid and the
+ * same two PCA axes as the face points. The returned radius is therefore the
+ * exact cosine distance to the current person's original centroid.
+ */
+export function projectEmbeddingToCluster(value, cluster, record = {}) {
+  const raw = parseEmbedding(value);
+  const dimensions = Number(cluster?.dimensions || 0);
+  const centroid = parseEmbedding(cluster?.centroid);
+  const pc1 = parseEmbedding(cluster?.projectionBasis?.pc1);
+  const pc2 = parseEmbedding(cluster?.projectionBasis?.pc2);
+
+  if (!raw.length || raw.some((item) => !Number.isFinite(item))) {
+    throw new Error('Das Personen-Embedding ist leer oder ungueltig.');
+  }
+  if (!dimensions || raw.length !== dimensions || centroid.length !== dimensions) {
+    throw new Error(`Embedding-Dimension ${raw.length} passt nicht zum Cluster mit ${dimensions} Dimensionen.`);
+  }
+
+  const unit = normalize(raw);
+  if (!unit) throw new Error('Das Personen-Embedding kann nicht normalisiert werden.');
+
+  const cosine = clamp(dot(unit, centroid), -1, 1);
+  const distance = Math.max(0, 1 - cosine);
+  const axisX = pc1.length === dimensions ? dot(unit, pc1) : 0;
+  const axisY = pc2.length === dimensions ? dot(unit, pc2) : 0;
+  const angle = Math.hypot(axisX, axisY) > EPSILON
+    ? Math.atan2(axisY, axisX)
+    : (hashString(record.id || record.personId || '') / 4294967295) * Math.PI * 2;
+
+  return {
+    ...record,
+    distance: round(distance),
+    angularDistance: round(Math.acos(cosine)),
+    centroidDot: round(cosine),
+    pc1Dot: round(axisX),
+    pc2Dot: round(axisY),
+    x: round(distance * Math.cos(angle)),
+    y: round(distance * Math.sin(angle)),
+  };
+}
+
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }

@@ -2,10 +2,16 @@
 
 Eigenständige Docker-Web-App zum Prüfen und Korrigieren von Immich-Personenzuordnungen.
 
-## Version 0.9.1
+## Version 0.10.0
 
 Neu in dieser Version:
 
+- optionaler Layer für angrenzende Personen im Vektorgraphen,
+- einstellbare Anzahl der angezeigten Nachbarpersonen,
+- farbige und nummerierte Personenmittelpunkte in derselben radialen Projektion,
+- Personen-Thumbnail und Distanz beim Überfahren eines Nachbarpunkts,
+- Klick auf einen Nachbarpunkt öffnet einen Dialog zum Öffnen in Immich oder zum direkten Zusammenführen mit der aktuell geprüften Person,
+- die aktuelle Person bleibt beim Zusammenführen als Ziel bestehen,
 - die Asset-Galerie lässt sich zwischen `außerhalb`, `innerhalb` und `alle` umschalten; innerhalb des Radius stehen die grenzwertigsten Faces zuerst,
 - der Mittelpunkt `c` des Vektor-Kreises kann direkt im Diagramm mit der Maus oder per Touch verschoben werden,
 - alle Cosinusabstände werden dabei zum neuen Mittelpunkt im hochdimensionalen Raum neu berechnet,
@@ -38,6 +44,9 @@ Die App schreibt **nicht direkt** in die Immich-Datenbank. Änderungen an Person
   - frei wählbarem Distanzradius,
   - P90-/P95-Presets für das aktuelle Zentrum,
   - Hover-Face-Thumbnail,
+  - optionalen angrenzenden Personen als eigene farbige Punkte,
+  - einstellbarer Anzahl von Nachbarpersonen,
+  - Hover-Personen-Thumbnail sowie direktem Öffnen oder Zusammenführen,
   - umschaltbarer Asset-Galerie für Faces außerhalb, innerhalb oder unabhängig vom Radius,
   - Mehrfachauswahl und Lösen der Zuordnung,
   - JSON-Export einschließlich aktuellem Mittelpunkt und neu berechneten Abständen.
@@ -140,7 +149,7 @@ docker compose logs -f immich-person-review
 ## Nur Docker
 
 ```bash
-docker build -t immich-person-review:0.9.1 .
+docker build -t immich-person-review:0.10.0 .
 
 docker run -d \
   --name immich-person-review \
@@ -156,7 +165,7 @@ docker run -d \
   -e IMMICH_DB_USER=immich_person_review \
   -e IMMICH_DB_PASSWORD='DEIN_READ_ONLY_PASSWORT' \
   -e IMMICH_DB_NAME=immich \
-  immich-person-review:0.9.1
+  immich-person-review:0.10.0
 ```
 
 ## Cluster-Mathematik
@@ -193,6 +202,24 @@ Die Winkelachsen werden entlang der Bewegung parallel transportiert. Anschließe
 
 Beim Wechsel des Filters werden nicht mehr sichtbare Markierungen aus Sicherheitsgründen verworfen, damit die Aktion „Personenzuordnung lösen“ nur auf die aktuell angezeigte Gruppe wirkt.
 
+### Angrenzende Personen
+
+Der Nachbarpersonen-Layer ist standardmäßig ausgeschaltet. Nach dem Aktivieren kann die Zahl der dargestellten Personen eingestellt werden.
+
+Die Berechnung läuft in zwei Stufen:
+
+1. Immich liefert eine begrenzte Kandidatenmenge anhand der Ähnlichkeit zum Feature-Face der aktuellen Person.
+2. Für jeden Kandidaten berechnet die Review-App aus allen sichtbaren Face-Embeddings mit Personenzuordnung einen Durchschnitt, normalisiert ihn und bestimmt dessen Cosinusdistanz zur normierten Mittelrichtung der aktuellen Person.
+
+Die endgültige Reihenfolge im Diagramm verwendet damit den Personenmittelpunkt und nicht nur ein einzelnes Feature-Face. Jeder Nachbar wird als eigener farbiger, nummerierter Punkt in die PCA-Basis der aktuellen Person projiziert. Wird der Mittelpunkt `c` verschoben, werden auch die Abstände der Nachbarpersonen zum neuen Mittelpunkt neu berechnet.
+
+Ein Klick auf einen Nachbarpunkt bietet zwei Aktionen:
+
+- Person in Immich öffnen,
+- Nachbarperson in die aktuell geprüfte Person zusammenführen.
+
+Beim Zusammenführen ist die Nachbarperson die Quelle und die aktuell geöffnete Person das Ziel. Die Quelle wird nach der Übernahme ihrer Face-Zuordnungen von Immich entfernt.
+
 ## Benötigte Immich-API-Rechte
 
 Je nach verwendeter Funktion:
@@ -227,6 +254,8 @@ Für das Lösen einer Zuordnung wird das Face kurz einer versteckten temporären
 | `IMMICH_DB_SSL` | TLS-Verbindung aktivieren | `false` |
 | `VECTOR_CLUSTER_DEFAULT_RADIUS` | fester Startwert; leer bedeutet P90 je Person | leer |
 | `VECTOR_CLUSTER_MAX_FACES` | Sicherheitslimit je Person | `30000` |
+| `VECTOR_CLUSTER_MAX_ADJACENT_PEOPLE` | maximal auswählbare Anzahl angrenzender Personen | `50` |
+| `VECTOR_CLUSTER_ADJACENT_CANDIDATE_POOL` | Größe der von Immich vorselektierten Kandidatenmenge | `500` |
 
 ## Architektur und Datenschutz
 
@@ -239,6 +268,8 @@ Browser
 ```
 
 API-Key und Datenbankpasswort werden nicht an den Browser ausgegeben. Einzelne vollständige Face-Embeddings werden ebenfalls nicht gesendet. Für das Verschieben des Zentrums erhält der Browser pro Face nur drei skalare Projektionswerte sowie die für die Darstellung benötigten Metadaten.
+
+Auch bei Nachbarpersonen erhält der Browser nicht deren vollständigen Durchschnittsvektor, sondern nur Distanz und drei skalare Projektionen in die Basis des aktuell geöffneten Clusters. Die bestehenden Read-only-Rechte auf `asset`, `asset_face` und `face_search` reichen weiterhin aus; ein zusätzliches `SELECT` auf `person` ist nicht erforderlich.
 
 ## Entwicklung und Tests
 

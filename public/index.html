@@ -100,6 +100,7 @@
               <div class="cluster-legend">
                 <span><i class="legend-dot inside"></i> innerhalb Radius</span>
                 <span><i class="legend-dot outside"></i> außerhalb Radius</span>
+                <span id="clusterNeighborLegend" class="hidden"><i class="legend-neighbor"></i> angrenzende Person</span>
                 <span><i class="legend-mean"></i> ursprünglicher Durchschnitt μ</span>
                 <span><i class="legend-center"></i> verschiebbares Zentrum c</span>
               </div>
@@ -130,6 +131,17 @@
                 <div><span class="count-dot outside"></span><strong id="clusterOutsideCount">0</strong><small>außerhalb</small></div>
                 <div><span class="count-dot selected"></span><strong id="clusterSelectedCount">0</strong><small>markiert</small></div>
               </div>
+              <div class="cluster-control-divider"></div>
+              <div class="cluster-neighbor-title-row">
+                <div class="cluster-control-title">Angrenzende Personen</div>
+                <label class="cluster-neighbor-toggle"><input id="clusterNeighborsEnabled" type="checkbox" /> einblenden</label>
+              </div>
+              <p class="cluster-control-copy">Zeigt die ähnlichsten Personenmittelpunkte im selben Projektionsraum. Die Immich-Nachbarschaft dient als Vorauswahl; die endgültige Reihenfolge verwendet den Durchschnitt aller sichtbaren Face-Embeddings je Person.</p>
+              <div class="cluster-neighbor-count-row">
+                <input id="clusterNeighborCountRange" type="range" min="1" max="50" step="1" value="8" disabled />
+                <input id="clusterNeighborCountInput" class="cluster-radius-number" type="number" min="1" max="50" step="1" value="8" inputmode="numeric" disabled />
+              </div>
+              <div id="clusterNeighborStatus" class="cluster-neighbor-status">Ausgeblendet</div>
               <div class="cluster-help-box">
                 <strong>Wichtig</strong>
                 <span>Radius und Punktabstände beziehen sich immer auf das aktuelle Zentrum c und werden im hochdimensionalen Raum neu berechnet. Die Treffer sind Prüfkandidaten, keine automatische Aussage über eine falsche Zuordnung.</span>
@@ -208,6 +220,24 @@
       <p id="duplicateFacesSummary" class="muted"></p>
       <div id="duplicateFacesPreview" class="duplicate-preview"></div>
       <div class="dialog-actions"><button id="applyDuplicateFacesBtn" class="btn remove" type="button">Größere Face-Boxen entfernen</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="clusterNeighborDialog">
+    <form method="dialog" class="dialog-card cluster-neighbor-dialog" onsubmit="return false">
+      <div class="dialog-head"><h2>Angrenzende Person</h2><button id="closeClusterNeighborDialog" class="icon-btn" aria-label="Schließen">×</button></div>
+      <div class="cluster-neighbor-dialog-person">
+        <img id="clusterNeighborDialogThumb" alt="" />
+        <div>
+          <h3 id="clusterNeighborDialogName">Person</h3>
+          <p id="clusterNeighborDialogMeta" class="muted"></p>
+        </div>
+      </div>
+      <p class="cluster-neighbor-merge-copy">Beim Zusammenführen werden alle Face-Zuordnungen dieser Person in <strong id="clusterNeighborDialogCurrent">die aktuelle Person</strong> übernommen. Die aktuelle Person bleibt bestehen.</p>
+      <div class="dialog-actions cluster-neighbor-dialog-actions">
+        <button id="clusterOpenNeighborBtn" class="btn ghost" type="button">In Immich öffnen</button>
+        <button id="clusterMergeNeighborBtn" class="btn remove" type="button">Mit aktueller Person zusammenführen</button>
+      </div>
     </form>
   </dialog>
 

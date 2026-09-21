@@ -167,3 +167,22 @@
 @media(max-width:700px){.cluster-center-status{grid-template-columns:1fr}.cluster-center-status .cluster-button{width:100%}.cluster-tooltip{min-width:220px;max-width:280px}.cluster-tooltip-thumb{width:72px;height:72px;flex-basis:72px}}
 .immich-asset-link{cursor:pointer}
 .immich-asset-link:hover{filter:brightness(.94)}
+
+/* Adjacent person centroids in the vector graph */
+.legend-neighbor{display:inline-block;width:11px;height:11px;background:#c084fc;border:1px solid #fff;transform:rotate(45deg);box-shadow:0 0 0 2px rgba(192,132,252,.14)}
+.cluster-neighbor-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.cluster-neighbor-toggle{display:inline-flex;align-items:center;gap:7px;color:#b6c8db;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer}
+.cluster-neighbor-toggle input{accent-color:#c084fc}
+.cluster-neighbor-count-row{display:grid;grid-template-columns:minmax(0,1fr) 82px;gap:10px;align-items:center}
+#clusterNeighborCountRange{width:100%;accent-color:#c084fc;padding:0;border:0;background:transparent}
+.cluster-neighbor-status{min-height:18px;color:#9fb1c5;font-size:11px;line-height:1.45}
+.cluster-tooltip-copy .neighbor-distance{color:#d8b4fe;font-weight:800}
+.cluster-tooltip-person-thumb{border:1px solid rgba(216,180,254,.55)}
+.cluster-neighbor-dialog{max-width:560px}
+.cluster-neighbor-dialog-person{display:grid;grid-template-columns:96px minmax(0,1fr);gap:15px;align-items:center;margin:10px 0 14px}
+.cluster-neighbor-dialog-person img{width:96px;height:96px;border-radius:50%;object-fit:cover;background:#07131f;border:2px solid #c084fc;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.cluster-neighbor-dialog-person h3{margin:0 0 5px;color:#f5f0ff;font-size:21px}
+.cluster-neighbor-dialog-person p{margin:0}
+.cluster-neighbor-merge-copy{margin:0;padding:12px;border:1px solid #3f3658;border-radius:10px;background:rgba(63,54,88,.24);color:#b9c9da;font-size:13px;line-height:1.5}
+.cluster-neighbor-dialog-actions{margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
+@media(max-width:700px){.cluster-neighbor-title-row{align-items:flex-start;flex-direction:column}.cluster-neighbor-count-row{grid-template-columns:1fr}.cluster-neighbor-count-row .cluster-radius-number{width:100%!important}.cluster-neighbor-dialog-person{grid-template-columns:72px minmax(0,1fr)}.cluster-neighbor-dialog-person img{width:72px;height:72px}.cluster-neighbor-dialog-actions .btn{width:100%}}
