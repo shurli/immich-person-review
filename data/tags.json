@@ -5273,7 +5273,7 @@
       "enabled": true
     },
     {
-      "id": "drawing",
+      "id": "drawing_media",
       "tag": "KI/Medientypen/Zeichnung",
       "label_de": "Zeichnung",
       "label_en": "drawing",
@@ -5290,7 +5290,7 @@
       "enabled": true
     },
     {
-      "id": "painting",
+      "id": "painting_media",
       "tag": "KI/Medientypen/Gemälde",
       "label_de": "Gemälde",
       "label_en": "painting",
