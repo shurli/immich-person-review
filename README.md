@@ -1,43 +1,197 @@
 # Immich Person Review
 
-Kleine, eigenständige Docker-Web-App zum Prüfen und Korrigieren von Immich-Personenzuordnungen.
+Eigenständige Docker-Web-App zum Prüfen und Korrigieren von Immich-Personenzuordnungen.
 
-## Version 0.8.0
+## Version 0.9.1
 
-Neu ist die Ansicht **Vektor-Cluster** für eine ausgewählte Person:
+Neu in dieser Version:
 
-- liest die Face-Embeddings ausschließlich lesend aus PostgreSQL,
-- berechnet den arithmetischen Durchschnittsvektor und die normierte Mittelrichtung,
-- misst für jedes Face die Cosinusdistanz zur Mittelrichtung,
-- projiziert den lokalen Ausschnitt der 512-dimensionalen Einheitssphäre in eine radiale 2D-Darstellung,
-- hält dabei den Radius jedes Punkts exakt gleich seiner echten Cosinusdistanz,
-- bietet einen frei einstellbaren Distanzradius sowie P90/P95-Presets,
-- zeigt die am wenigsten ähnlichen Gesichter außerhalb des Radius zuerst,
-- erlaubt Mehrfachauswahl und das Lösen der Personenzuordnung,
-- exportiert die berechneten Cluster-Daten als JSON.
+- die Asset-Galerie lässt sich zwischen `außerhalb`, `innerhalb` und `alle` umschalten; innerhalb des Radius stehen die grenzwertigsten Faces zuerst,
+- der Mittelpunkt `c` des Vektor-Kreises kann direkt im Diagramm mit der Maus oder per Touch verschoben werden,
+- alle Cosinusabstände werden dabei zum neuen Mittelpunkt im hochdimensionalen Raum neu berechnet,
+- die Punkte werden radial um das aktuelle Zentrum neu projiziert, sodass der sichtbare Radius weiterhin dem tatsächlichen Abstand entspricht,
+- beim Überfahren eines Vektorpunkts wird ein zugeschnittener Face-Thumbnail geladen,
+- Asset-Karten enthalten einen Link zum zugehörigen Asset in Immich,
+- interne API-Verbindung und externe Browser-URL sind getrennt:
+  - `IMMICH_URL` für die Kommunikation innerhalb des Docker-Netzes,
+  - `IMMICH_EXTERNAL_URL` für Personen- und Asset-Links im Browser,
+- `docker-compose.yml` enthält die Anbindung an das externe Netzwerk `immich_default` bereits vollständig.
 
-Die App schreibt **nicht direkt** in die Immich-Datenbank. Änderungen an Personenzuordnungen laufen weiterhin über die Immich-REST-API.
-
-## Wichtiger Hinweis zur Datenbankanbindung
-
-Immich stellt die Face-Embeddings derzeit nicht über seine öffentliche REST-API bereit. Die Clusteransicht liest deshalb die internen Tabellen `asset`, `asset_face` und `face_search` direkt. Dieser Teil ist versionsabhängig: Nach größeren Immich-Upgrades sollte die Clusteransicht geprüft werden, bevor Zuordnungen geändert werden.
-
-Für die übrigen Funktionen reicht weiterhin die API-Anbindung. Ohne PostgreSQL-Zugang zeigt die App die bisherigen Review-Ansichten; nur der Tab **Vektor-Cluster** ist nicht verfügbar.
+Die App schreibt **nicht direkt** in die Immich-Datenbank. Änderungen an Personenzuordnungen laufen über die Immich-REST-API. PostgreSQL wird nur lesend für Face-Embeddings und die dazugehörigen Metadaten verwendet.
 
 ## Funktionsumfang
 
 - Person auswählen oder suchen
 - Personen-Timeline paginiert und chronologisch anzeigen
-- vollständiges Asset plus Face-Bounding-Box und vergrößerter Gesichtsausschnitt
-- Alter zum Aufnahmezeitpunkt aus Geburtsdatum und Aufnahmedatum
+- Asset, Face-Bounding-Box und vergrößerten Gesichtsausschnitt anzeigen
+- Alter zum Aufnahmezeitpunkt berechnen
 - Face einer anderen oder einer neuen Person zuweisen
 - Personenzuordnung lösen, ohne Face-Markierung und Embedding zu löschen
 - Face-Markierung vollständig entfernen
 - Zuordnungen vor dem Geburtsdatum gesammelt prüfen und lösen
 - unbenannte Personen anzeigen, verstecken oder zusammenführen
-- beste Personen-Thumbnails setzen
-- doppelte Face-Boxen einer Person innerhalb desselben Assets bereinigen
-- 512D-Vektorcluster mit Distanzradius, Ausreißergalerie und Mehrfachkorrektur
+- Personen-Thumbnails aktualisieren
+- doppelte Face-Boxen innerhalb desselben Assets bereinigen
+- 512D-Vektorcluster mit:
+  - Durchschnittsvektor und normierter Mittelrichtung `μ`,
+  - verschiebbarem aktuellem Zentrum `c`,
+  - frei wählbarem Distanzradius,
+  - P90-/P95-Presets für das aktuelle Zentrum,
+  - Hover-Face-Thumbnail,
+  - umschaltbarer Asset-Galerie für Faces außerhalb, innerhalb oder unabhängig vom Radius,
+  - Mehrfachauswahl und Lösen der Zuordnung,
+  - JSON-Export einschließlich aktuellem Mittelpunkt und neu berechneten Abständen.
+
+## Konfiguration
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Mindestens erforderlich:
+
+```dotenv
+# Interne URL des Immich-Servers im Docker-Netz
+IMMICH_URL=http://immich-server:2283
+IMMICH_API_PREFIX=/api
+IMMICH_API_KEY=DEIN_API_KEY
+
+# Vom Browser erreichbare Webadresse
+IMMICH_EXTERNAL_URL=https://photos.example.com
+```
+
+`IMMICH_EXTERNAL_URL` wird ausschließlich für Links verwendet. Der API-Key und die interne Docker-Adresse werden nicht an den Browser weitergegeben.
+
+Für die Clusteransicht zusätzlich:
+
+```dotenv
+IMMICH_DB_HOST=database
+IMMICH_DB_PORT=5432
+IMMICH_DB_USER=immich_person_review
+IMMICH_DB_PASSWORD=DEIN_READ_ONLY_PASSWORT
+IMMICH_DB_NAME=immich
+IMMICH_DB_SSL=false
+```
+
+Alternativ kann eine vollständige Verbindung in `IMMICH_DB_URL` gesetzt werden.
+
+## Read-only-PostgreSQL-Benutzer
+
+Als PostgreSQL-Administrator in der Immich-Datenbank ausführen:
+
+```sql
+CREATE ROLE immich_person_review
+  LOGIN
+  PASSWORD 'EIN_LANGES_ZUFAELLIGES_PASSWORT'
+  NOSUPERUSER
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION;
+
+GRANT CONNECT ON DATABASE immich TO immich_person_review;
+GRANT USAGE ON SCHEMA public TO immich_person_review;
+GRANT SELECT ON TABLE
+  public.asset,
+  public.asset_face,
+  public.face_search
+TO immich_person_review;
+```
+
+Nach einer Immich-Migration, die eine dieser Tabellen neu erstellt, müssen die `GRANT`-Anweisungen gegebenenfalls erneut ausgeführt werden.
+
+## Start mit Docker Compose
+
+Die mitgelieferte `docker-compose.yml` verwendet das externe Netzwerk `immich_default`:
+
+```yaml
+networks:
+  immich:
+    external: true
+    name: immich_default
+```
+
+Den tatsächlichen Netzwerknamen prüfen:
+
+```bash
+docker network ls | grep immich
+```
+
+Falls dein Netzwerk anders heißt, passe `name:` in `docker-compose.yml` an.
+
+Start:
+
+```bash
+docker compose up -d --build
+```
+
+Oberfläche:
+
+```text
+http://DEIN-SERVER:3030
+```
+
+Logs:
+
+```bash
+docker compose logs -f immich-person-review
+```
+
+## Nur Docker
+
+```bash
+docker build -t immich-person-review:0.9.1 .
+
+docker run -d \
+  --name immich-person-review \
+  --restart unless-stopped \
+  -p 3030:3000 \
+  --network immich_default \
+  -e IMMICH_URL=http://immich-server:2283 \
+  -e IMMICH_EXTERNAL_URL=https://photos.example.com \
+  -e IMMICH_API_PREFIX=/api \
+  -e IMMICH_API_KEY='DEIN_API_KEY' \
+  -e IMMICH_DB_HOST=database \
+  -e IMMICH_DB_PORT=5432 \
+  -e IMMICH_DB_USER=immich_person_review \
+  -e IMMICH_DB_PASSWORD='DEIN_READ_ONLY_PASSWORT' \
+  -e IMMICH_DB_NAME=immich \
+  immich-person-review:0.9.1
+```
+
+## Cluster-Mathematik
+
+Jedes Face-Embedding wird L2-normalisiert. Aus den normalisierten Embeddings wird zunächst der arithmetische Mittelwert und daraus die normierte Mittelrichtung `μ` berechnet.
+
+Für ein normalisiertes Face-Embedding `x` und das aktuelle Zentrum `c` gilt:
+
+```text
+Cosinusdistanz d(x, c) = 1 - x · c
+```
+
+Kleine Werte bedeuten hohe Ähnlichkeit zum aktuellen Zentrum.
+
+### Verschieben des Mittelpunkts
+
+Die ersten beiden PCA-Richtungen im Tangentialraum von `μ` bilden zusammen mit `μ` einen dreidimensionalen Unterraum der 512-dimensionalen Einbettung. Beim Ziehen des Mittelpunkts wird `c` auf der Einheitssphäre innerhalb dieses Unterraums bewegt.
+
+Für jeden Punkt speichert der Server nur drei skalare Projektionen:
+
+- `x · μ`
+- `x · pc1`
+- `x · pc2`
+
+Damit kann der Browser den exakten Skalarproduktswert `x · c` für jeden zulässigen verschobenen Mittelpunkt berechnen, ohne das vollständige Face-Embedding an den Browser zu senden.
+
+Die Winkelachsen werden entlang der Bewegung parallel transportiert. Anschließend wird jeder Punkt mit seinem echten Abstand `d(x, c)` radial um den neuen Mittelpunkt gezeichnet. Daher stimmt „innerhalb/außerhalb des Kreises“ auch nach dem Verschieben mit dem neu berechneten hochdimensionalen Abstand überein.
+
+### Galeriefilter
+
+- **Außerhalb:** `d(x, c) > Radius`, größte Distanz zuerst.
+- **Innerhalb:** `d(x, c) ≤ Radius`, ebenfalls größte Distanz zuerst; dadurch stehen die grenzwertigsten noch enthaltenen Faces zuerst.
+- **Alle:** sämtliche Faces nach abnehmender Distanz.
+
+Beim Wechsel des Filters werden nicht mehr sichtbare Markierungen aus Sicherheitsgründen verworfen, damit die Aktion „Personenzuordnung lösen“ nur auf die aktuell angezeigte Gruppe wirkt.
 
 ## Benötigte Immich-API-Rechte
 
@@ -54,132 +208,14 @@ Je nach verwendeter Funktion:
 - `face.update`
 - `face.delete`
 
-Für das Lösen einer Zuordnung verwendet die App ausschließlich offizielle API-Aufrufe: Das Face wird kurz einer versteckten temporären Person zugewiesen; anschließend wird diese Person gelöscht. Dadurch bleibt die Face-Markierung erhalten und ihre Personenzuordnung wird leer.
-
-## Read-only-Datenbankbenutzer anlegen
-
-Der Review-Container benötigt für die Clusteransicht nur `SELECT` auf drei Tabellen. Beispiel, als PostgreSQL-Administrator in der Immich-Datenbank ausgeführt:
-
-```sql
-CREATE ROLE immich_person_review
-  LOGIN
-  PASSWORD 'EIN_LANGES_ZUFAELLIGES_PASSWORT';
-
-GRANT CONNECT ON DATABASE immich TO immich_person_review;
-GRANT USAGE ON SCHEMA public TO immich_person_review;
-GRANT SELECT ON TABLE
-  public.asset,
-  public.asset_face,
-  public.face_search
-TO immich_person_review;
-```
-
-Nach einer Immich-Migration, die eine dieser Tabellen neu erstellt, müssen die `GRANT`-Anweisungen gegebenenfalls erneut ausgeführt werden. Die Verwendung des PostgreSQL-Superusers ist nicht empfohlen.
-
-## Start mit Docker Compose
-
-### 1. Konfiguration anlegen
-
-```bash
-cp .env.example .env
-nano .env
-```
-
-Mindestens erforderlich:
-
-```dotenv
-IMMICH_URL=http://immich-server:2283
-IMMICH_API_PREFIX=/api
-IMMICH_API_KEY=DEIN_API_KEY
-```
-
-Für die Clusteransicht zusätzlich:
-
-```dotenv
-IMMICH_DB_HOST=database
-IMMICH_DB_PORT=5432
-IMMICH_DB_USER=immich_person_review
-IMMICH_DB_PASSWORD=DEIN_READ_ONLY_PASSWORT
-IMMICH_DB_NAME=immich
-```
-
-Alternativ kann eine vollständige Verbindungszeichenfolge in `IMMICH_DB_URL` gesetzt werden.
-
-### 2. Netzwerk wählen
-
-Liegt PostgreSQL über eine normale IP/DNS-Adresse erreichbar vor, genügt:
-
-```bash
-docker compose up -d --build
-```
-
-Soll die App den Immich-Dienstnamen `database` im bestehenden Immich-Docker-Netz verwenden, zuerst den Netzwerknamen prüfen:
-
-```bash
-docker network ls
-```
-
-Dann in `.env` setzen, zum Beispiel:
-
-```dotenv
-IMMICH_DOCKER_NETWORK=immich_default
-```
-
-und mit dem Overlay starten:
-
-```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.immich-network.yml \
-  up -d --build
-```
-
-### 3. Oberfläche öffnen
-
-```text
-http://DEIN-SERVER:3030
-```
-
-## Nur Docker
-
-```bash
-docker build -t immich-person-review:0.8.0 .
-
-docker run -d \
-  --name immich-person-review \
-  --restart unless-stopped \
-  -p 3030:3000 \
-  --network immich_default \
-  -e IMMICH_URL=http://immich-server:2283 \
-  -e IMMICH_API_PREFIX=/api \
-  -e IMMICH_API_KEY='DEIN_API_KEY' \
-  -e IMMICH_DB_HOST=database \
-  -e IMMICH_DB_PORT=5432 \
-  -e IMMICH_DB_USER=immich_person_review \
-  -e IMMICH_DB_PASSWORD='DEIN_READ_ONLY_PASSWORT' \
-  -e IMMICH_DB_NAME=immich \
-  immich-person-review:0.8.0
-```
-
-## Cluster-Mathematik
-
-Jedes Embedding wird zuerst L2-normalisiert. Aus allen Embeddings einer Person wird der komponentenweise arithmetische Mittelwert berechnet. Seine normierte Richtung ist das Clusterzentrum `μ` auf der Einheitssphäre.
-
-Für ein normalisiertes Face-Embedding `x` verwendet die App:
-
-```text
-Cosinusdistanz d(x, μ) = 1 - x · μ
-```
-
-Kleine Werte bedeuten hohe Ähnlichkeit zur Cluster-Mitte. Die radiale Position im Diagramm ist genau `d(x, μ)`. Nur der Winkel wird durch eine PCA im Tangentialraum auf zwei Dimensionen reduziert. Deshalb stimmt die Auswahl „innerhalb/außerhalb des Kreises“ mit dem tatsächlichen 512D-Abstand überein, obwohl die Winkel und Nachbarschaften in der 2D-Ansicht nur eine Projektion sind.
-
-Der gewählte Radius ist eine **maximale** Distanz zur Cluster-Mitte. Er ist nicht identisch mit Immichs eigener Erkennungsschwelle, weil Immich Gesichter beziehungsweise Nachbarn untereinander clustert, während diese Review-Ansicht jedes Face mit der Mittelrichtung der ausgewählten Person vergleicht.
+Für das Lösen einer Zuordnung wird das Face kurz einer versteckten temporären Person zugewiesen. Danach wird diese Person gelöscht. Dadurch bleibt die Face-Markierung erhalten, während ihre Personenzuordnung leer wird.
 
 ## Konfigurationsvariablen
 
 | Variable | Bedeutung | Standard |
 |---|---|---|
-| `IMMICH_URL` | Basis-URL des Immich-Servers | erforderlich |
+| `IMMICH_URL` | interne Basis-URL des Immich-Servers | erforderlich |
+| `IMMICH_EXTERNAL_URL` | vom Browser erreichbare Immich-Webadresse für Links | fällt aus Kompatibilitätsgründen auf `IMMICH_URL` zurück |
 | `IMMICH_API_PREFIX` | API-Prefix | `/api` |
 | `IMMICH_API_KEY` | serverseitig verwendeter API-Key | erforderlich |
 | `IMMICH_DB_URL` | vollständige PostgreSQL-Verbindungszeichenfolge | leer |
@@ -197,11 +233,12 @@ Der gewählte Radius ist eine **maximale** Distanz zur Cluster-Mitte. Er ist nic
 ```text
 Browser
   └─ Review-Container
-       ├─ Immich REST API       (Lesen und alle Änderungen)
-       └─ PostgreSQL read-only  (nur Embeddings und Face-/Asset-Metadaten)
+       ├─ Immich REST API       über IMMICH_URL
+       ├─ Immich-Weblinks       über IMMICH_EXTERNAL_URL
+       └─ PostgreSQL read-only  für Embeddings und Face-/Asset-Metadaten
 ```
 
-API-Key und Datenbankpasswort werden nicht an den Browser ausgegeben. Einzelne 512D-Face-Embeddings werden ebenfalls nicht an den Browser gesendet; der Server liefert nur Durchschnittsvektoren, Distanzen, Projektionskoordinaten und die für die Galerie benötigten Metadaten.
+API-Key und Datenbankpasswort werden nicht an den Browser ausgegeben. Einzelne vollständige Face-Embeddings werden ebenfalls nicht gesendet. Für das Verschieben des Zentrums erhält der Browser pro Face nur drei skalare Projektionswerte sowie die für die Darstellung benötigten Metadaten.
 
 ## Entwicklung und Tests
 
@@ -210,5 +247,3 @@ npm install
 npm test
 npm start
 ```
-
-Der Docker-Build installiert die Node-Abhängigkeiten automatisch.

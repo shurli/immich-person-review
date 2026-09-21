@@ -21,6 +21,13 @@ test('radial projection preserves cosine distance from centroid', () => {
   }
   assert.ok(Math.abs(cluster.centroidNorm - 1) < 1e-8);
   assert.equal(cluster.meanVector.length, 3);
+  assert.equal(cluster.projectionBasis.pc1.length, 3);
+  assert.equal(cluster.projectionBasis.pc2.length, 3);
+  for (const point of cluster.points) {
+    assert.ok(Number.isFinite(point.centroidDot));
+    assert.ok(Number.isFinite(point.pc1Dot));
+    assert.ok(Number.isFinite(point.pc2Dot));
+  }
   assert.ok(cluster.meanVectorNorm > 0 && cluster.meanVectorNorm <= 1);
 });
 

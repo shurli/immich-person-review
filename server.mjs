@@ -11,6 +11,7 @@ const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.jso
 const appVersion = packageInfo.version || 'unknown';
 const port = Number(process.env.PORT || 3000);
 const immichUrl = (process.env.IMMICH_URL || '').replace(/\/$/, '');
+const immichExternalUrl = (process.env.IMMICH_EXTERNAL_URL || immichUrl).replace(/\/$/, '');
 const apiPrefixRaw = process.env.IMMICH_API_PREFIX ?? '/api';
 const apiPrefix = apiPrefixRaw ? '/' + apiPrefixRaw.replace(/^\/+|\/+$/g, '') : '';
 const apiKey = process.env.IMMICH_API_KEY || '';
@@ -557,7 +558,15 @@ async function handleApi(req, res, url) {
       const r = await immichFetch('/api-keys/me');
       if (!r.ok) return proxyJson(res, r);
       const keyInfo = await r.json();
-      return json(res, 200, { ok: true, keyName: keyInfo.name || 'API key', immichUrl, version: appVersion, vectorDatabase: await vectorDatabaseInfo({ probe: true }) });
+      return json(res, 200, {
+        ok: true,
+        keyName: keyInfo.name || 'API key',
+        immichExternalUrl,
+        // Backward-compatible field for older frontends. It intentionally contains the browser URL, not the internal API URL.
+        immichUrl: immichExternalUrl,
+        version: appVersion,
+        vectorDatabase: await vectorDatabaseInfo({ probe: true }),
+      });
     }
 
 
@@ -883,7 +892,8 @@ http.createServer((req, res) => {
 }).listen(port, '0.0.0.0', () => {
   console.log(`Immich Person Review v${appVersion}`);
   console.log(`Listening on :${port}`);
-  console.log(`Immich endpoint: ${immichUrl}${apiPrefix}`);
+  console.log(`Immich API endpoint: ${immichUrl}${apiPrefix}`);
+  console.log(`Immich external URL: ${immichExternalUrl || 'not configured'}`);
   console.log(`Vector database: ${vectorDbConfigured ? 'configured' : 'not configured'}`);
 });
 

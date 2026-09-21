@@ -1,7 +1,7 @@
 services:
   immich-person-review:
     build: .
-    image: immich-person-review:0.8.0
+    image: immich-person-review:0.9.1
     container_name: immich-person-review
     restart: unless-stopped
     ports:
@@ -10,5 +10,10 @@ services:
       - .env
     environment:
       PORT: "3000"
-      # Standardmaessig nutzt Immich /api.
-      IMMICH_API_PREFIX: "${IMMICH_API_PREFIX:-/api}"
+    networks:
+      - immich
+
+networks:
+  immich:
+    external: true
+    name: immich_default

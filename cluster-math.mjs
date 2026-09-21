@@ -159,6 +159,7 @@ export function buildVectorCluster(records, options = {}) {
       stats: { count: 0, minDistance: 0, maxDistance: 0, meanDistance: 0, medianDistance: 0, p90Distance: 0, p95Distance: 0 },
       defaultRadius: 0,
       projection: 'radial-tangent-pca',
+      projectionBasis: { pc1: [], pc2: [] },
     };
   }
 
@@ -182,7 +183,7 @@ export function buildVectorCluster(records, options = {}) {
       const scale = theta / tangentNorm;
       for (let i = 0; i < dimensions; i++) tangent[i] = (unit[i] - cosine * centroid[i]) * scale;
     }
-    intermediate.push({ record, distance, theta, tangent });
+    intermediate.push({ record, unit, cosine, distance, theta, tangent });
     if (theta > EPSILON) tangentVectors.push(tangent);
   }
 
@@ -192,7 +193,7 @@ export function buildVectorCluster(records, options = {}) {
   let pc2 = principalComponent(pcaSample, dimensions, `${options.seed || 'cluster'}:pc2`, [centroid, pc1].filter(Boolean));
   if (!pc2) pc2 = deterministicUnitVector(dimensions, `${options.seed || 'cluster'}:fallback2`, [centroid, pc1].filter(Boolean));
 
-  const points = intermediate.map(({ record, distance, theta, tangent }) => {
+  const points = intermediate.map(({ record, unit, cosine, distance, theta, tangent }) => {
     let angle = 0;
     if (distance > EPSILON && pc1 && pc2) {
       const axisX = dot(tangent, pc1);
@@ -208,6 +209,9 @@ export function buildVectorCluster(records, options = {}) {
       embedding: undefined,
       distance: round(distance),
       angularDistance: round(theta),
+      centroidDot: round(cosine),
+      pc1Dot: round(pc1 ? dot(unit, pc1) : 0),
+      pc2Dot: round(pc2 ? dot(unit, pc2) : 0),
       x: round(distance * Math.cos(angle)),
       y: round(distance * Math.sin(angle)),
     };
@@ -240,5 +244,9 @@ export function buildVectorCluster(records, options = {}) {
     },
     defaultRadius: round(defaultRadius),
     projection: 'radial-tangent-pca',
+    projectionBasis: {
+      pc1: pc1 ? Array.from(pc1, (value) => round(value)) : [],
+      pc2: pc2 ? Array.from(pc2, (value) => round(value)) : [],
+    },
   };
 }

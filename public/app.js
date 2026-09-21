@@ -1,3 +1,14 @@
+import {
+  clusterCenterVector,
+  describeClusterCenter,
+  distanceToClusterCenter,
+  projectPointAroundClusterCenter,
+} from './cluster-center-math.js';
+import {
+  filterAndSortClusterPoints,
+  isClusterListMode,
+} from './cluster-list-mode.js';
+
 const $ = (s) => document.querySelector(s);
 const PAGE_SIZE = 40;
 
@@ -22,9 +33,24 @@ const state = {
   clusterRadius: 0,
   clusterSelected: new Set(),
   clusterVisibleCount: 80,
+  clusterListMode: 'outside',
   clusterLoadedFor: null,
   clusterLoading: false,
   clusterPlotPoints: [],
+  clusterPlotGeometry: null,
+  clusterPointView: new Map(),
+  clusterDynamicStats: null,
+  clusterCenter: { x: 0, y: 0 },
+  clusterCenterMaxDistance: 0,
+  clusterActiveCenterVector: [],
+  clusterCenterDragging: false,
+  clusterCenterDragPointerId: null,
+  clusterCenterDragMoved: false,
+  clusterCenterDragFrame: 0,
+  clusterCenterDragPending: null,
+  clusterCenterDragGeometry: null,
+  clusterCenterDragStart: null,
+  clusterHoverFaceId: null,
   clusterImageCache: new Map(),
   timelineStale: false,
 };
@@ -94,15 +120,17 @@ function ageAt(birth, taken) {
 }
 
 function thumbPerson(id, bust = '') { return `/review-api/people/${id}/thumbnail${bust ? `?v=${encodeURIComponent(bust)}` : ''}`; }
-function thumbAsset(id) { return `/review-api/assets/${id}/thumbnail?size=preview`; }
+function thumbAsset(id, size = 'preview') { return `/review-api/assets/${id}/thumbnail?size=${encodeURIComponent(size)}`; }
 function immichPersonUrl(id) { return state.immichUrl ? `${state.immichUrl}/people/${encodeURIComponent(id)}` : '#'; }
+function immichAssetUrl(id) { return state.immichUrl ? `${state.immichUrl}/photos/${encodeURIComponent(id)}` : '#'; }
 function openImmichPerson(id) { if (state.immichUrl) window.open(immichPersonUrl(id), '_blank', 'noopener,noreferrer'); }
+function openImmichAsset(id) { if (state.immichUrl) window.open(immichAssetUrl(id), '_blank', 'noopener,noreferrer'); }
 
 async function init() {
   try {
     const s = await api('/review-api/status');
     $('#appVersion').textContent = s.version ? `v${s.version}` : 'v?';
-    state.immichUrl = String(s.immichUrl || '').replace(/\/$/, '');
+    state.immichUrl = String(s.immichExternalUrl || s.immichUrl || '').replace(/\/$/, '');
     state.vectorDatabase = s.vectorDatabase || { configured: false };
     const clusterBadge = $('#clusterDbBadge');
     const databaseReady = state.vectorDatabase.configured
@@ -481,8 +509,10 @@ function appendTimeline(items) {
     const taken = asset.fileCreatedAt || asset.localDateTime || asset.createdAt;
     const beforeBirth = isBeforeBirth(state.person.birthDate, taken);
     card.dataset.beforeBirth = beforeBirth ? 'true' : 'false';
-    card.innerHTML = `<div class="full-wrap"><img class="full-photo" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Asset')}"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}${asset.type ? ` · ${esc(asset.type === 'VIDEO' ? 'Video' : asset.type === 'IMAGE' ? 'Bild' : asset.type)}` : ''}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><button class="btn detach detach-face" disabled>Zuordnung lösen</button><button class="btn remove remove-face" disabled>Markierung entfernen</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
+    card.innerHTML = `<div class="full-wrap"><img class="full-photo immich-asset-link" loading="lazy" src="${thumbAsset(asset.id)}" alt="${esc(asset.originalFileName || 'Asset')}" title="In Immich öffnen"><div class="face-box hidden"></div></div><aside class="side"><canvas class="crop" width="500" height="500"></canvas><div><div class="date">${fmtDate(taken)}</div><div class="age">${ageAt(state.person.birthDate, taken)}</div><div class="muted">${esc(asset.originalFileName || '')}${asset.type ? ` · ${esc(asset.type === 'VIDEO' ? 'Video' : asset.type === 'IMAGE' ? 'Bild' : asset.type)}` : ''}</div></div><div class="face-state muted">Gesicht wird bei Bedarf geladen…</div><div class="actions"><button class="btn warn reassign" disabled>Falsche Zuordnung ändern</button><button class="btn detach detach-face" disabled>Zuordnung lösen</button><button class="btn remove remove-face" disabled>Markierung entfernen</button><span class="badge ok-badge hidden">Korrigiert</span></div></aside>`;
     tl.appendChild(card);
+    const fullPhoto = card.querySelector('.full-photo');
+    if (state.immichUrl) fullPhoto.addEventListener('click', () => openImmichAsset(asset.id));
     faceObserver.observe(card);
   }
 }
@@ -706,16 +736,34 @@ function resetClusterState() {
   state.clusterRadius = 0;
   state.clusterSelected.clear();
   state.clusterVisibleCount = 80;
+  state.clusterListMode = 'outside';
   state.clusterLoadedFor = null;
   state.clusterLoading = false;
   state.clusterPlotPoints = [];
+  state.clusterPlotGeometry = null;
+  state.clusterPointView.clear();
+  state.clusterDynamicStats = null;
+  state.clusterCenter = { x: 0, y: 0 };
+  state.clusterCenterMaxDistance = 0;
+  state.clusterActiveCenterVector = [];
+  state.clusterCenterDragging = false;
+  state.clusterCenterDragPointerId = null;
+  state.clusterCenterDragMoved = false;
+  state.clusterCenterDragPending = null;
+  state.clusterCenterDragGeometry = null;
+  state.clusterCenterDragStart = null;
+  state.clusterHoverFaceId = null;
+  if (state.clusterCenterDragFrame) cancelAnimationFrame(state.clusterCenterDragFrame);
+  state.clusterCenterDragFrame = 0;
   state.clusterImageCache.clear();
   clearTimeout(clusterOutlierRenderTimer);
   clusterResizeObserver?.disconnect();
+  $('#clusterCanvas')?.classList.remove('dragging-center', 'center-hover');
   $('#clusterLoading')?.classList.remove('hidden');
   $('#clusterError')?.classList.add('hidden');
   $('#clusterDashboard')?.classList.add('hidden');
   if ($('#clusterOutlierGrid')) $('#clusterOutlierGrid').innerHTML = '';
+  hideClusterTooltip();
 }
 
 function setPersonView(view, { load = true } = {}) {
@@ -748,7 +796,7 @@ async function reloadTimelineView() {
 }
 
 function clusterSetupMessage() {
-  return `Für die Vektoransicht braucht die App zusätzlich einen lesenden PostgreSQL-Zugriff auf die Immich-Datenbank.\n\nBeispiel für .env:\nIMMICH_DB_HOST=database\nIMMICH_DB_PORT=5432\nIMMICH_DB_USER=postgres\nIMMICH_DB_PASSWORD=…\nIMMICH_DB_NAME=immich\n\nDer App-Container muss außerdem im selben Docker-Netz wie Immich/PostgreSQL liegen.`;
+  return `Für die Vektoransicht braucht die App zusätzlich einen lesenden PostgreSQL-Zugriff auf die Immich-Datenbank.\n\nBeispiel für .env:\nIMMICH_DB_HOST=database\nIMMICH_DB_PORT=5432\nIMMICH_DB_USER=immich_person_review\nIMMICH_DB_PASSWORD=…\nIMMICH_DB_NAME=immich\n\nDer App-Container muss außerdem im selben Docker-Netz wie Immich/PostgreSQL liegen.`;
 }
 
 function showClusterError(message) {
@@ -762,7 +810,7 @@ function showClusterError(message) {
 async function loadVectorCluster({ force = false } = {}) {
   if (!state.person || state.clusterLoading) return;
   if (!force && state.cluster && state.clusterLoadedFor === state.person.id) {
-    renderVectorCluster({ resetRadius: false });
+    renderVectorCluster({ resetRadius: false, resetCenter: false });
     return;
   }
   if (!state.vectorDatabase.configured) {
@@ -770,7 +818,7 @@ async function loadVectorCluster({ force = false } = {}) {
     return;
   }
 
-  const preserveRadius = Boolean(state.cluster && state.clusterLoadedFor === state.person.id);
+  const preserveControls = Boolean(state.cluster && state.clusterLoadedFor === state.person.id);
   state.clusterLoading = true;
   $('#clusterLoading').classList.remove('hidden');
   $('#clusterError').classList.add('hidden');
@@ -782,7 +830,7 @@ async function loadVectorCluster({ force = false } = {}) {
     state.clusterSelected.clear();
     state.clusterVisibleCount = 80;
     state.clusterImageCache.clear();
-    renderVectorCluster({ resetRadius: !preserveRadius });
+    renderVectorCluster({ resetRadius: !preserveControls, resetCenter: !preserveControls });
   } catch (error) {
     showClusterError(error.message);
   } finally {
@@ -802,7 +850,81 @@ function formatClusterDate(value) {
   return fmtDate(date);
 }
 
-function renderVectorCluster({ resetRadius = true } = {}) {
+function clusterQuantile(sortedValues, q) {
+  if (!sortedValues.length) return 0;
+  if (sortedValues.length === 1) return sortedValues[0];
+  const position = Math.min(1, Math.max(0, q)) * (sortedValues.length - 1);
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  const fraction = position - lower;
+  return sortedValues[lower] * (1 - fraction) + sortedValues[upper] * fraction;
+}
+
+function clusterViewForPoint(point) {
+  return state.clusterPointView.get(point.faceId) || {
+    distance: distanceToClusterCenter(point, state.clusterCenter),
+    x: Number(point.x) || 0,
+    y: Number(point.y) || 0,
+  };
+}
+
+function currentClusterDistance(point) {
+  return Number(clusterViewForPoint(point).distance || 0);
+}
+
+function updateClusterCenterReadout({ updateVectorText = true } = {}) {
+  if (!state.cluster || !state.clusterDynamicStats) return;
+  const center = describeClusterCenter(state.clusterCenter);
+  const moved = center.radialDistance > 1e-9;
+  const stats = state.clusterDynamicStats;
+  const furthest = state.cluster.points.reduce((best, point) => {
+    if (!best || currentClusterDistance(point) > currentClusterDistance(best)) return point;
+    return best;
+  }, null);
+
+  $('#clusterCentroidMeta').textContent = moved
+    ? `${state.cluster.dimensions}D · d(c, μ) ${formatClusterDistance(center.radialDistance)} · R ${formatClusterDistance(state.cluster.meanVectorNorm, 3)}`
+    : `${state.cluster.dimensions}D · Mittelpunkt μ · R ${formatClusterDistance(state.cluster.meanVectorNorm, 3)}`;
+  $('#clusterMeanDistance').textContent = formatClusterDistance(stats.meanDistance);
+  $('#clusterMaxDistance').textContent = formatClusterDistance(stats.maxDistance);
+  $('#clusterMaxDistanceMeta').textContent = furthest?.originalFileName || 'entferntestes Gesicht';
+  $('#clusterPresetP90').textContent = `P90 · ${formatClusterDistance(stats.p90Distance)}`;
+  $('#clusterPresetP95').textContent = `P95 · ${formatClusterDistance(stats.p95Distance)}`;
+  $('#clusterCenterDistance').textContent = formatClusterDistance(center.radialDistance);
+  $('#clusterCenterMode').textContent = moved ? 'manuell verschoben' : 'entspricht μ';
+  $('#clusterResetCenterBtn').disabled = !moved;
+
+  if (updateVectorText) {
+    $('#clusterActiveCenterVector').value = `[${state.clusterActiveCenterVector.map((value) => Number(value).toFixed(8)).join(', ')}]`;
+  }
+}
+
+function recomputeClusterPointView({ updateVectorText = true } = {}) {
+  if (!state.cluster) return;
+  const view = new Map();
+  const distances = [];
+  for (const point of state.cluster.points) {
+    const projected = projectPointAroundClusterCenter(point, state.clusterCenter);
+    view.set(point.faceId, projected);
+    distances.push(projected.distance);
+  }
+  distances.sort((a, b) => a - b);
+  const meanDistance = distances.length ? distances.reduce((sum, value) => sum + value, 0) / distances.length : 0;
+  state.clusterPointView = view;
+  state.clusterDynamicStats = {
+    count: distances.length,
+    minDistance: distances[0] || 0,
+    maxDistance: distances.at(-1) || 0,
+    meanDistance,
+    medianDistance: clusterQuantile(distances, 0.5),
+    p90Distance: clusterQuantile(distances, 0.9),
+    p95Distance: clusterQuantile(distances, 0.95),
+  };
+  state.clusterActiveCenterVector = clusterCenterVector(state.cluster, state.clusterCenter);
+  updateClusterCenterReadout({ updateVectorText });
+}
+
+function renderVectorCluster({ resetRadius = true, resetCenter = true } = {}) {
   const data = state.cluster;
   if (!data) return;
   if (!data.points?.length) {
@@ -815,15 +937,25 @@ function renderVectorCluster({ resetRadius = true } = {}) {
   $('#clusterDashboard').classList.remove('hidden');
   $('#clusterFaceCount').textContent = data.facesWithEmbedding;
   $('#clusterMissingCount').textContent = `${data.facesWithoutEmbedding} ohne Embedding`;
-  $('#clusterCentroidMeta').textContent = `${data.dimensions}D · Konzentration R ${formatClusterDistance(data.meanVectorNorm, 3)}`;
-  $('#clusterMeanDistance').textContent = formatClusterDistance(data.stats.meanDistance);
-  $('#clusterMaxDistance').textContent = formatClusterDistance(data.stats.maxDistance);
-  const furthest = [...data.points].sort((a, b) => b.distance - a.distance)[0];
-  $('#clusterMaxDistanceMeta').textContent = furthest?.originalFileName || 'entferntestes Gesicht';
   $('#clusterMeanVector').value = `[${(data.meanVector || []).join(', ')}]`;
   $('#clusterCentroidVector').value = `[${(data.centroid || []).join(', ')}]`;
 
-  const maxControlValue = Math.min(2, Math.max(0.5, Number(data.stats.maxDistance || 0) * 1.08, Number(data.defaultRadius || 0) * 1.08));
+  state.clusterCenterMaxDistance = Math.min(
+    1.5,
+    Math.max(0.12, Number(data.stats.maxDistance || 0) * 1.5, Number(data.defaultRadius || 0) * 0.8),
+  );
+  if (resetCenter) {
+    state.clusterCenter = { x: 0, y: 0 };
+  } else {
+    const current = describeClusterCenter(state.clusterCenter);
+    if (current.radialDistance > state.clusterCenterMaxDistance) {
+      const scale = state.clusterCenterMaxDistance / current.radialDistance;
+      state.clusterCenter = { x: current.x * scale, y: current.y * scale };
+    }
+  }
+  $('#clusterCenterLimit').textContent = formatClusterDistance(state.clusterCenterMaxDistance);
+
+  const maxControlValue = 2;
   $('#clusterRadiusRange').max = String(maxControlValue);
   $('#clusterRadiusInput').max = String(maxControlValue);
   const initial = Number.isFinite(Number(data.defaultRadius)) ? Number(data.defaultRadius) : Number(data.stats.p90Distance || 0);
@@ -832,9 +964,8 @@ function renderVectorCluster({ resetRadius = true } = {}) {
   } else {
     state.clusterRadius = Math.min(maxControlValue, Math.max(0, state.clusterRadius));
   }
-  $('#clusterPresetP90').textContent = `P90 · ${formatClusterDistance(data.presets?.p90)}`;
-  $('#clusterPresetP95').textContent = `P95 · ${formatClusterDistance(data.presets?.p95)}`;
 
+  recomputeClusterPointView();
   clusterResizeObserver?.disconnect();
   if ('ResizeObserver' in window) {
     clusterResizeObserver = new ResizeObserver(() => drawVectorCluster());
@@ -843,11 +974,86 @@ function renderVectorCluster({ resetRadius = true } = {}) {
   updateClusterThreshold({ renderCards: true });
 }
 
+function clusterPointIsOutside(point) {
+  return currentClusterDistance(point) > state.clusterRadius;
+}
+
 function getClusterOutliers() {
   if (!state.cluster) return [];
-  return state.cluster.points
-    .filter((point) => Number(point.distance) > state.clusterRadius)
-    .sort((a, b) => Number(b.distance) - Number(a.distance));
+  return filterAndSortClusterPoints(state.cluster.points, {
+    mode: 'outside',
+    radius: state.clusterRadius,
+    distanceOf: currentClusterDistance,
+  });
+}
+
+function getClusterListedPoints() {
+  if (!state.cluster) return [];
+  return filterAndSortClusterPoints(state.cluster.points, {
+    mode: state.clusterListMode,
+    radius: state.clusterRadius,
+    distanceOf: currentClusterDistance,
+  });
+}
+
+function clusterListModeCopy(count) {
+  const radius = formatClusterDistance(state.clusterRadius);
+  if (state.clusterListMode === 'inside') {
+    return {
+      title: 'Assets innerhalb des Radius',
+      summary: `${count} Face${count === 1 ? '' : 's'} mit Distanz ≤ ${radius} zum aktuellen Zentrum · grenzwertigste zuerst.`,
+      empty: 'Bei diesem Radius liegen keine Gesichter innerhalb.',
+      selectAll: 'Innerhalb markieren',
+    };
+  }
+  if (state.clusterListMode === 'all') {
+    return {
+      title: 'Alle Assets nach Distanz',
+      summary: `${count} Face${count === 1 ? '' : 's'} · größte Distanz zum aktuellen Zentrum zuerst.`,
+      empty: 'Für diese Person sind keine Gesichter mit Embedding vorhanden.',
+      selectAll: 'Alle markieren',
+    };
+  }
+  return {
+    title: 'Assets außerhalb des Radius',
+    summary: `${count} Face${count === 1 ? '' : 's'} mit Distanz > ${radius} zum aktuellen Zentrum · am wenigsten ähnliche zuerst.`,
+    empty: 'Bei diesem Radius liegen keine Gesichter außerhalb.',
+    selectAll: 'Außerhalb markieren',
+  };
+}
+
+function updateClusterListModeUi(points = getClusterListedPoints()) {
+  for (const [mode, selector] of [
+    ['outside', '#clusterShowOutsideBtn'],
+    ['inside', '#clusterShowInsideBtn'],
+    ['all', '#clusterShowAllBtn'],
+  ]) {
+    const button = $(selector);
+    const active = state.clusterListMode === mode;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+  const copy = clusterListModeCopy(points.length);
+  $('#clusterAssetListTitle').textContent = copy.title;
+  $('#clusterOutlierSummary').textContent = copy.summary;
+  $('#clusterEmptyOutliers').textContent = copy.empty;
+  $('#clusterSelectAllBtn').textContent = copy.selectAll;
+}
+
+function pruneClusterSelectionToCurrentList() {
+  const allowed = new Set(getClusterListedPoints().map((point) => point.faceId));
+  for (const faceId of [...state.clusterSelected]) {
+    if (!allowed.has(faceId)) state.clusterSelected.delete(faceId);
+  }
+}
+
+function setClusterListMode(mode) {
+  if (!isClusterListMode(mode) || state.clusterListMode === mode) return;
+  state.clusterListMode = mode;
+  state.clusterVisibleCount = 80;
+  pruneClusterSelectionToCurrentList();
+  renderClusterOutliers();
+  drawVectorCluster();
 }
 
 function setClusterRadius(value, { renderCards = true } = {}) {
@@ -858,18 +1064,34 @@ function setClusterRadius(value, { renderCards = true } = {}) {
   updateClusterThreshold({ renderCards });
 }
 
+function setClusterCenter(x, y, { renderCards = true, updateVectorText = true } = {}) {
+  let nextX = Number(x);
+  let nextY = Number(y);
+  if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) return;
+  const radius = Math.hypot(nextX, nextY);
+  if (radius > state.clusterCenterMaxDistance && radius > 0) {
+    const scale = state.clusterCenterMaxDistance / radius;
+    nextX *= scale;
+    nextY *= scale;
+  }
+  state.clusterCenter = { x: nextX, y: nextY };
+  recomputeClusterPointView({ updateVectorText });
+  updateClusterThreshold({ renderCards });
+}
+
+function resetClusterCenter() {
+  setClusterCenter(0, 0, { renderCards: true, updateVectorText: true });
+}
+
 function updateClusterThreshold({ renderCards = true } = {}) {
   if (!state.cluster) return;
   $('#clusterRadiusRange').value = String(state.clusterRadius);
   $('#clusterRadiusInput').value = state.clusterRadius.toFixed(3);
   const outliers = getClusterOutliers();
-  const outlierIds = new Set(outliers.map((point) => point.faceId));
-  for (const faceId of [...state.clusterSelected]) {
-    if (!outlierIds.has(faceId)) state.clusterSelected.delete(faceId);
-  }
   $('#clusterOutsideCount').textContent = outliers.length;
   $('#clusterInsideCount').textContent = Math.max(0, state.cluster.points.length - outliers.length);
-  $('#clusterOutlierSummary').textContent = `${outliers.length} Face${outliers.length === 1 ? '' : 's'} mit Distanz > ${formatClusterDistance(state.clusterRadius)} · größte Distanz zuerst.`;
+  pruneClusterSelectionToCurrentList();
+  updateClusterListModeUi();
   updateClusterSelectionControls();
   drawVectorCluster();
 
@@ -878,7 +1100,7 @@ function updateClusterThreshold({ renderCards = true } = {}) {
     renderClusterOutliers();
   } else {
     clearTimeout(clusterOutlierRenderTimer);
-    clusterOutlierRenderTimer = setTimeout(renderClusterOutliers, 90);
+    clusterOutlierRenderTimer = setTimeout(renderClusterOutliers, 110);
   }
 }
 
@@ -904,20 +1126,26 @@ function toggleClusterSelection(faceId, selected = !state.clusterSelected.has(fa
 }
 
 function renderClusterOutliers() {
-  const outliers = getClusterOutliers();
-  const shown = outliers.slice(0, state.clusterVisibleCount);
-  $('#clusterEmptyOutliers').classList.toggle('hidden', outliers.length !== 0);
+  const listedPoints = getClusterListedPoints();
+  const shown = listedPoints.slice(0, state.clusterVisibleCount);
+  updateClusterListModeUi(listedPoints);
+  $('#clusterEmptyOutliers').classList.toggle('hidden', listedPoints.length !== 0);
   const grid = $('#clusterOutlierGrid');
   grid.innerHTML = shown.map((point) => {
     const date = point.localDateTime || point.fileCreatedAt || point.createdAt;
     const width = Math.max(0, Number(point.boundingBoxX2) - Number(point.boundingBoxX1));
     const height = Math.max(0, Number(point.boundingBoxY2) - Number(point.boundingBoxY1));
     const selected = state.clusterSelected.has(point.faceId);
-    return `<article class="cluster-outlier-card${selected ? ' selected' : ''}" data-face-id="${esc(point.faceId)}" title="Zum Markieren anklicken">
+    const outside = clusterPointIsOutside(point);
+    const externalLink = state.immichUrl
+      ? `<a class="cluster-open-asset" href="${esc(immichAssetUrl(point.assetId))}" target="_blank" rel="noopener noreferrer" title="Asset in Immich öffnen" aria-label="Asset in Immich öffnen">↗</a>`
+      : '';
+    return `<article class="cluster-outlier-card ${outside ? 'outside' : 'inside'}${selected ? ' selected' : ''}" data-face-id="${esc(point.faceId)}" title="Zum Markieren anklicken">
+      ${externalLink}
       <input type="checkbox" aria-label="Face markieren" ${selected ? 'checked' : ''}>
       <canvas width="320" height="320"></canvas>
       <div class="cluster-card-body">
-        <div class="cluster-distance">${formatClusterDistance(point.distance)}</div>
+        <div class="cluster-distance">${formatClusterDistance(currentClusterDistance(point))}</div>
         <div class="cluster-file">${esc(point.originalFileName || point.assetId)}</div>
         <div class="cluster-date">${esc(formatClusterDate(date))}</div>
         <div class="cluster-face-size">Face ${width} × ${height} px</div>
@@ -925,19 +1153,21 @@ function renderClusterOutliers() {
     </article>`;
   }).join('');
 
+  const pointsById = new Map(shown.map((point) => [point.faceId, point]));
   for (const card of grid.querySelectorAll('.cluster-outlier-card')) {
     const faceId = card.dataset.faceId;
-    const point = shown.find((item) => item.faceId === faceId);
+    const point = pointsById.get(faceId);
     const checkbox = card.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('click', (event) => event.stopPropagation());
     checkbox.addEventListener('change', () => toggleClusterSelection(faceId, checkbox.checked));
+    card.querySelector('.cluster-open-asset')?.addEventListener('click', (event) => event.stopPropagation());
     card.addEventListener('click', () => toggleClusterSelection(faceId));
     paintClusterFaceCrop(card.querySelector('canvas'), point);
   }
 
   const loadMore = $('#clusterLoadMoreBtn');
-  loadMore.classList.toggle('hidden', shown.length >= outliers.length);
-  if (shown.length < outliers.length) loadMore.textContent = `Weitere anzeigen (${outliers.length - shown.length})`;
+  loadMore.classList.toggle('hidden', shown.length >= listedPoints.length);
+  if (shown.length < listedPoints.length) loadMore.textContent = `Weitere anzeigen (${listedPoints.length - shown.length})`;
   updateClusterSelectionControls();
 }
 
@@ -1006,11 +1236,21 @@ function drawVectorCluster() {
   if (!state.cluster || $('#clusterView').classList.contains('hidden')) return;
   const { ctx, width, height } = prepareClusterCanvas();
   ctx.clearRect(0, 0, width, height);
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const maxDistance = Math.max(0.01, Number(state.cluster.stats.maxDistance || 0), state.clusterRadius);
+  const originX = width / 2;
+  const originY = height / 2;
   const plotRadius = Math.max(80, Math.min(width, height) * 0.42);
-  const scale = plotRadius / maxDistance;
+  const center = describeClusterCenter(state.clusterCenter);
+  let maxWorldDistance = center.radialDistance + state.clusterRadius;
+  for (const point of state.cluster.points) {
+    const view = clusterViewForPoint(point);
+    maxWorldDistance = Math.max(maxWorldDistance, Math.hypot(view.x, view.y));
+  }
+  maxWorldDistance = Math.max(0.01, maxWorldDistance * 1.08);
+  const scale = state.clusterCenterDragging && state.clusterCenterDragGeometry?.scale
+    ? state.clusterCenterDragGeometry.scale
+    : plotRadius / maxWorldDistance;
+  const centerPx = originX + center.x * scale;
+  const centerPy = originY - center.y * scale;
 
   ctx.save();
   ctx.strokeStyle = 'rgba(150,180,210,.12)';
@@ -1018,33 +1258,51 @@ function drawVectorCluster() {
   for (let i = 1; i <= 4; i++) {
     const radius = plotRadius * (i / 4);
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.arc(originX, originY, radius, 0, Math.PI * 2);
     ctx.stroke();
   }
   ctx.beginPath();
-  ctx.moveTo(centerX - plotRadius, centerY);
-  ctx.lineTo(centerX + plotRadius, centerY);
-  ctx.moveTo(centerX, centerY - plotRadius);
-  ctx.lineTo(centerX, centerY + plotRadius);
+  ctx.moveTo(originX - plotRadius, originY);
+  ctx.lineTo(originX + plotRadius, originY);
+  ctx.moveTo(originX, originY - plotRadius);
+  ctx.lineTo(originX, originY + plotRadius);
   ctx.stroke();
+
+  if (center.radialDistance > 1e-9) {
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = 'rgba(125,172,238,.58)';
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(centerPx, centerPy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   const thresholdPixels = state.clusterRadius * scale;
   ctx.strokeStyle = '#68a4ff';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, thresholdPixels, 0, Math.PI * 2);
+  ctx.arc(centerPx, centerPy, thresholdPixels, 0, Math.PI * 2);
   ctx.stroke();
   ctx.fillStyle = '#9fc5ff';
   ctx.font = '12px system-ui';
   ctx.textAlign = 'left';
-  ctx.fillText(`Radius ${formatClusterDistance(state.clusterRadius)}`, Math.min(width - 130, centerX + thresholdPixels + 8), centerY - 7);
+  ctx.fillText(
+    `Radius ${formatClusterDistance(state.clusterRadius)}`,
+    Math.max(8, Math.min(width - 138, centerPx + thresholdPixels + 8)),
+    Math.max(16, centerPy - 7),
+  );
 
-  const plotted = state.cluster.points.map((point) => ({
-    point,
-    outside: Number(point.distance) > state.clusterRadius,
-    px: centerX + Number(point.x) * scale,
-    py: centerY - Number(point.y) * scale,
-  })).sort((a, b) => Number(a.outside) - Number(b.outside));
+  const plotted = state.cluster.points.map((point) => {
+    const view = clusterViewForPoint(point);
+    return {
+      point,
+      view,
+      outside: view.distance > state.clusterRadius,
+      px: originX + view.x * scale,
+      py: originY - view.y * scale,
+    };
+  }).sort((a, b) => Number(a.outside) - Number(b.outside));
 
   for (const item of plotted) {
     const selected = state.clusterSelected.has(item.point.faceId);
@@ -1062,27 +1320,54 @@ function drawVectorCluster() {
     }
   }
 
-  ctx.strokeStyle = '#78adff';
-  ctx.lineWidth = 2;
+  // Original normalized arithmetic mean μ.
+  ctx.strokeStyle = '#9db6d1';
+  ctx.lineWidth = 1.6;
   ctx.beginPath();
-  ctx.moveTo(centerX - 8, centerY - 8);
-  ctx.lineTo(centerX + 8, centerY + 8);
-  ctx.moveTo(centerX + 8, centerY - 8);
-  ctx.lineTo(centerX - 8, centerY + 8);
+  ctx.moveTo(originX - 6, originY - 6);
+  ctx.lineTo(originX + 6, originY + 6);
+  ctx.moveTo(originX + 6, originY - 6);
+  ctx.lineTo(originX - 6, originY + 6);
   ctx.stroke();
-  ctx.fillStyle = '#b8d5ff';
+  ctx.fillStyle = '#aebfd2';
   ctx.font = '12px system-ui';
-  ctx.fillText('μ', centerX + 11, centerY - 10);
+  ctx.fillText('μ', originX + 9, originY - 8);
+
+  // Draggable current spherical center c.
+  ctx.beginPath();
+  ctx.arc(centerPx, centerPy, 11, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(62,136,255,.28)';
+  ctx.fill();
+  ctx.strokeStyle = '#78adff';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(centerPx, centerPy, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#dbeafe';
+  ctx.fill();
+  ctx.fillStyle = '#c7ddff';
+  ctx.font = 'bold 12px system-ui';
+  ctx.fillText('c', centerPx + 14, centerPy - 10);
   ctx.restore();
 
   state.clusterPlotPoints = plotted;
+  state.clusterPlotGeometry = { originX, originY, centerPx, centerPy, scale, plotRadius, width, height };
+}
+
+function clusterCanvasCoordinates(event) {
+  const canvas = $('#clusterCanvas');
+  const rect = canvas.getBoundingClientRect();
+  return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+
+function pointerNearClusterCenter(event, radius = 17) {
+  if (!state.clusterPlotGeometry) return false;
+  const point = clusterCanvasCoordinates(event);
+  return Math.hypot(point.x - state.clusterPlotGeometry.centerPx, point.y - state.clusterPlotGeometry.centerPy) <= radius;
 }
 
 function nearestClusterPlotPoint(event) {
-  const canvas = $('#clusterCanvas');
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const { x, y } = clusterCanvasCoordinates(event);
   let nearest = null;
   let nearestDistance = Infinity;
   for (const item of state.clusterPlotPoints) {
@@ -1095,35 +1380,133 @@ function nearestClusterPlotPoint(event) {
   return nearestDistance <= 12 ? { item: nearest, x, y } : null;
 }
 
+function hideClusterTooltip() {
+  state.clusterHoverFaceId = null;
+  $('#clusterTooltip').classList.add('hidden');
+}
+
+function positionClusterTooltip(hit) {
+  const tooltip = $('#clusterTooltip');
+  const wrap = $('#clusterCanvasWrap');
+  const width = tooltip.offsetWidth || 310;
+  const height = tooltip.offsetHeight || 126;
+  tooltip.style.left = `${Math.max(0, Math.min(hit.x, wrap.clientWidth - width - 18))}px`;
+  tooltip.style.top = `${Math.max(0, Math.min(hit.y, wrap.clientHeight - height - 18))}px`;
+}
+
 function showClusterTooltip(event) {
+  if (state.clusterCenterDragging || pointerNearClusterCenter(event)) {
+    hideClusterTooltip();
+    return;
+  }
   const hit = nearestClusterPlotPoint(event);
   const tooltip = $('#clusterTooltip');
   if (!hit) {
-    tooltip.classList.add('hidden');
+    hideClusterTooltip();
     return;
   }
   const point = hit.item.point;
-  const date = point.localDateTime || point.fileCreatedAt || point.createdAt;
-  tooltip.innerHTML = `<strong>${esc(point.originalFileName || point.assetId)}</strong><span class="distance">Distanz ${formatClusterDistance(point.distance)}</span><br>${esc(formatClusterDate(date))}${hit.item.outside ? '<br>außerhalb des Radius' : ''}`;
-  const wrap = $('#clusterCanvasWrap');
-  tooltip.style.left = `${Math.max(0, Math.min(hit.x, wrap.clientWidth - 270))}px`;
-  tooltip.style.top = `${Math.max(0, Math.min(hit.y, wrap.clientHeight - 100))}px`;
-  tooltip.classList.remove('hidden');
+  if (state.clusterHoverFaceId !== point.faceId) {
+    state.clusterHoverFaceId = point.faceId;
+    const date = point.localDateTime || point.fileCreatedAt || point.createdAt;
+    tooltip.innerHTML = `<canvas class="cluster-tooltip-thumb" width="112" height="112"></canvas><div class="cluster-tooltip-copy"><strong>${esc(point.originalFileName || point.assetId)}</strong><span class="distance">Distanz ${formatClusterDistance(hit.item.view.distance)}</span><span>${esc(formatClusterDate(date))}</span>${hit.item.outside ? '<span>außerhalb des Radius</span>' : '<span>innerhalb des Radius</span>'}${state.immichUrl ? '<span class="cluster-tooltip-open">↗ in Immich öffnen: Punkt anklicken, dann Karte verwenden</span>' : ''}</div>`;
+    tooltip.classList.remove('hidden');
+    paintClusterFaceCrop(tooltip.querySelector('canvas'), point);
+  } else {
+    tooltip.classList.remove('hidden');
+  }
+  positionClusterTooltip(hit);
+}
+
+function queueClusterCenterDrag(event) {
+  const geometry = state.clusterCenterDragGeometry || state.clusterPlotGeometry;
+  if (!geometry) return;
+  const local = clusterCanvasCoordinates(event);
+  state.clusterCenterDragPending = {
+    x: (local.x - geometry.originX) / geometry.scale,
+    y: (geometry.originY - local.y) / geometry.scale,
+  };
+  if (state.clusterCenterDragFrame) return;
+  state.clusterCenterDragFrame = requestAnimationFrame(() => {
+    state.clusterCenterDragFrame = 0;
+    const pending = state.clusterCenterDragPending;
+    state.clusterCenterDragPending = null;
+    if (!pending || !state.clusterCenterDragging) return;
+    setClusterCenter(pending.x, pending.y, { renderCards: false, updateVectorText: false });
+  });
+}
+
+function startClusterCenterDrag(event) {
+  if (event.button !== 0 || !pointerNearClusterCenter(event)) return;
+  event.preventDefault();
+  hideClusterTooltip();
+  const canvas = $('#clusterCanvas');
+  state.clusterCenterDragging = true;
+  state.clusterCenterDragPointerId = event.pointerId;
+  state.clusterCenterDragMoved = false;
+  state.clusterCenterDragStart = clusterCanvasCoordinates(event);
+  state.clusterCenterDragGeometry = { ...state.clusterPlotGeometry };
+  canvas.classList.add('dragging-center');
+  canvas.setPointerCapture?.(event.pointerId);
+}
+
+function moveClusterPointer(event) {
+  const canvas = $('#clusterCanvas');
+  if (state.clusterCenterDragging && event.pointerId === state.clusterCenterDragPointerId) {
+    const local = clusterCanvasCoordinates(event);
+    if (Math.hypot(local.x - state.clusterCenterDragStart.x, local.y - state.clusterCenterDragStart.y) > 3) {
+      state.clusterCenterDragMoved = true;
+    }
+    queueClusterCenterDrag(event);
+    return;
+  }
+  canvas.classList.toggle('center-hover', pointerNearClusterCenter(event));
+  showClusterTooltip(event);
+}
+
+function finishClusterCenterDrag(event) {
+  if (!state.clusterCenterDragging || event.pointerId !== state.clusterCenterDragPointerId) return;
+  const canvas = $('#clusterCanvas');
+  if (state.clusterCenterDragPending) {
+    const pending = state.clusterCenterDragPending;
+    state.clusterCenterDragPending = null;
+    setClusterCenter(pending.x, pending.y, { renderCards: false, updateVectorText: false });
+  }
+  if (state.clusterCenterDragFrame) cancelAnimationFrame(state.clusterCenterDragFrame);
+  state.clusterCenterDragFrame = 0;
+  state.clusterCenterDragging = false;
+  state.clusterCenterDragPointerId = null;
+  state.clusterCenterDragGeometry = null;
+  canvas.classList.remove('dragging-center', 'center-hover');
+  try { canvas.releasePointerCapture?.(event.pointerId); } catch {}
+  recomputeClusterPointView({ updateVectorText: true });
+  updateClusterThreshold({ renderCards: true });
+  if (event.type === 'pointercancel') state.clusterCenterDragMoved = false;
 }
 
 function selectClusterPointFromCanvas(event) {
+  if (state.clusterCenterDragMoved) {
+    state.clusterCenterDragMoved = false;
+    return;
+  }
+  if (pointerNearClusterCenter(event)) return;
   const hit = nearestClusterPlotPoint(event);
-  if (!hit || !hit.item.outside) return;
+  if (!hit) return;
   const point = hit.item.point;
+  const pointMode = hit.item.outside ? 'outside' : 'inside';
+  if (state.clusterListMode !== 'all' && state.clusterListMode !== pointMode) {
+    setClusterListMode(pointMode);
+  }
   toggleClusterSelection(point.faceId);
-  const outliers = getClusterOutliers();
-  const index = outliers.findIndex((item) => item.faceId === point.faceId);
+  const listedPoints = getClusterListedPoints();
+  const index = listedPoints.findIndex((item) => item.faceId === point.faceId);
   if (index >= state.clusterVisibleCount) {
     state.clusterVisibleCount = Math.ceil((index + 1) / 80) * 80;
     renderClusterOutliers();
   }
   requestAnimationFrame(() => document.querySelector(`[data-face-id="${point.faceId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
 }
+
 
 async function detachSelectedClusterFaces() {
   if (!state.person || !state.clusterSelected.size) return;
@@ -1169,22 +1552,38 @@ function copyClusterMean() {
 }
 
 function copyClusterCentroid() {
-  return copyClusterVector('#clusterCentroidVector', 'Normierte Mittelrichtung kopiert');
+  return copyClusterVector('#clusterCentroidVector', 'Normierte Mittelrichtung μ kopiert');
+}
+
+function copyClusterActiveCenter() {
+  return copyClusterVector('#clusterActiveCenterVector', 'Aktuelles Zentrum c kopiert');
 }
 
 function exportVectorCluster() {
   if (!state.cluster || !state.person) return;
+  const center = describeClusterCenter(state.clusterCenter);
   const payload = {
     generatedAt: new Date().toISOString(),
     person: { id: state.person.id, name: state.person.name || '' },
     dimensions: state.cluster.dimensions,
     projection: state.cluster.projection,
     radius: state.clusterRadius,
+    selectionCenter: {
+      x: center.x,
+      y: center.y,
+      angleRadians: center.angle,
+      cosineDistanceFromMean: center.radialDistance,
+      vector: state.clusterActiveCenterVector,
+    },
     meanVector: state.cluster.meanVector,
     meanVectorNorm: state.cluster.meanVectorNorm,
     centroid: state.cluster.centroid,
-    stats: state.cluster.stats,
-    points: state.cluster.points,
+    originalStats: state.cluster.stats,
+    currentStats: state.clusterDynamicStats,
+    points: state.cluster.points.map((point) => {
+      const view = clusterViewForPoint(point);
+      return { ...point, reviewDistance: view.distance, reviewX: view.x, reviewY: view.y };
+    }),
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1293,11 +1692,14 @@ $('#clusterRadiusInput').addEventListener('change', (event) => setClusterRadius(
 $('#clusterRadiusInput').addEventListener('keydown', (event) => {
   if (event.key === 'Enter') setClusterRadius(event.currentTarget.value);
 });
-$('#clusterPresetP90').onclick = () => state.cluster && setClusterRadius(state.cluster.presets?.p90 ?? state.cluster.stats.p90Distance);
-$('#clusterPresetP95').onclick = () => state.cluster && setClusterRadius(state.cluster.presets?.p95 ?? state.cluster.stats.p95Distance);
+$('#clusterPresetP90').onclick = () => state.cluster && setClusterRadius(state.clusterDynamicStats?.p90Distance ?? state.cluster.stats.p90Distance);
+$('#clusterPresetP95').onclick = () => state.cluster && setClusterRadius(state.clusterDynamicStats?.p95Distance ?? state.cluster.stats.p95Distance);
 $('#clusterPresetImmich').onclick = () => setClusterRadius(0.5);
+$('#clusterShowOutsideBtn').onclick = () => setClusterListMode('outside');
+$('#clusterShowInsideBtn').onclick = () => setClusterListMode('inside');
+$('#clusterShowAllBtn').onclick = () => setClusterListMode('all');
 $('#clusterSelectAllBtn').onclick = () => {
-  for (const point of getClusterOutliers()) state.clusterSelected.add(point.faceId);
+  for (const point of getClusterListedPoints()) state.clusterSelected.add(point.faceId);
   updateClusterSelectionControls();
   drawVectorCluster();
 };
@@ -1313,9 +1715,14 @@ $('#clusterLoadMoreBtn').onclick = () => {
 };
 $('#clusterCopyMeanBtn').onclick = copyClusterMean;
 $('#clusterCopyCentroidBtn').onclick = copyClusterCentroid;
+$('#clusterCopyActiveCenterBtn').onclick = copyClusterActiveCenter;
 $('#clusterExportBtn').onclick = exportVectorCluster;
-$('#clusterCanvas').addEventListener('pointermove', showClusterTooltip);
-$('#clusterCanvas').addEventListener('pointerleave', () => $('#clusterTooltip').classList.add('hidden'));
+$('#clusterResetCenterBtn').onclick = resetClusterCenter;
+$('#clusterCanvas').addEventListener('pointerdown', startClusterCenterDrag);
+$('#clusterCanvas').addEventListener('pointermove', moveClusterPointer);
+$('#clusterCanvas').addEventListener('pointerup', finishClusterCenterDrag);
+$('#clusterCanvas').addEventListener('pointercancel', finishClusterCenterDrag);
+$('#clusterCanvas').addEventListener('pointerleave', () => { if (!state.clusterCenterDragging) hideClusterTooltip(); });
 $('#clusterCanvas').addEventListener('click', selectClusterPointFromCanvas);
 
 $('#batchBeforeBirthBtn').onclick = () => runBatchBeforeBirth();

@@ -68,14 +68,14 @@
               <small id="clusterMissingCount">0 ohne Embedding</small>
             </article>
             <article class="cluster-summary-card">
-              <span>Clusterzentrum</span>
-              <strong>μ</strong>
-              <small id="clusterCentroidMeta">normierte Mittelrichtung</small>
+              <span>Aktuelles Clusterzentrum</span>
+              <strong>c</strong>
+              <small id="clusterCentroidMeta">entspricht zunächst μ</small>
             </article>
             <article class="cluster-summary-card">
               <span>Mittlere Distanz</span>
               <strong id="clusterMeanDistance">0,000</strong>
-              <small>Cosinusdistanz zum Mittelwert</small>
+              <small>Cosinusdistanz zum aktuellen Zentrum c</small>
             </article>
             <article class="cluster-summary-card">
               <span>Größte Distanz</span>
@@ -89,7 +89,7 @@
               <div class="cluster-panel-head">
                 <div>
                   <h2 id="clusterTitle">Vektor-Cluster</h2>
-                  <p>Radiale Tangentialraum-PCA: Der Radius ist die echte 512D-Cosinusdistanz, der Winkel ist eine 2D-Projektion.</p>
+                  <p>Ziehe den blauen Mittelpunkt c mit der Maus. Die Punkte werden radial neu projiziert; ihr Abstand zum Kreiszentrum bleibt die echte 512D-Cosinusdistanz.</p>
                 </div>
                 <button id="clusterReloadBtn" class="cluster-button subtle" type="button">Neu berechnen</button>
               </div>
@@ -100,13 +100,22 @@
               <div class="cluster-legend">
                 <span><i class="legend-dot inside"></i> innerhalb Radius</span>
                 <span><i class="legend-dot outside"></i> außerhalb Radius</span>
-                <span><i class="legend-center"></i> Durchschnittsvektor μ</span>
+                <span><i class="legend-mean"></i> ursprünglicher Durchschnitt μ</span>
+                <span><i class="legend-center"></i> verschiebbares Zentrum c</span>
               </div>
             </section>
 
             <aside class="cluster-panel cluster-controls-panel">
+              <div class="cluster-control-title">Clusterzentrum verschieben</div>
+              <p class="cluster-control-copy">Greife den blauen Mittelpunkt c im Diagramm und ziehe ihn in Richtung des gewünschten Kernclusters. Die Bewegung bleibt auf der durch die zwei PCA-Achsen aufgespannten Fläche der Einheitssphäre.</p>
+              <div class="cluster-center-status">
+                <div><span>Abstand c zu μ</span><strong id="clusterCenterDistance">0,000</strong><small id="clusterCenterMode">entspricht μ</small></div>
+                <button id="clusterResetCenterBtn" class="cluster-button subtle" type="button" disabled>Auf μ zurücksetzen</button>
+              </div>
+              <div class="cluster-center-limit">Maximal verschiebbar: <span id="clusterCenterLimit">0,000</span></div>
+              <div class="cluster-control-divider"></div>
               <div class="cluster-control-title">Maximaler Vektorabstand</div>
-              <p class="cluster-control-copy">Alle Faces mit größerer Cosinusdistanz zur normierten Mittelrichtung werden als Ausreißer angezeigt.</p>
+              <p class="cluster-control-copy">Alle Faces mit größerer Cosinusdistanz zum aktuellen Zentrum c werden als Ausreißer angezeigt.</p>
               <div class="cluster-radius-row">
                 <input id="clusterRadiusRange" type="range" min="0" max="1" step="0.005" value="0.45" />
                 <input id="clusterRadiusInput" class="cluster-radius-number" type="number" min="0" max="2" step="0.005" value="0.45" inputmode="decimal" />
@@ -123,26 +132,31 @@
               </div>
               <div class="cluster-help-box">
                 <strong>Wichtig</strong>
-                <span>Der Radius entspricht exakt der Cosinusdistanz im hochdimensionalen Raum. Die Treffer sind Prüfkandidaten, keine automatische Aussage über eine falsche Zuordnung.</span>
+                <span>Radius und Punktabstände beziehen sich immer auf das aktuelle Zentrum c und werden im hochdimensionalen Raum neu berechnet. Die Treffer sind Prüfkandidaten, keine automatische Aussage über eine falsche Zuordnung.</span>
               </div>
             </aside>
           </div>
 
           <section class="cluster-panel cluster-outliers-panel">
             <div class="cluster-panel-head cluster-outlier-head">
-              <div>
-                <h2>Assets außerhalb des Radius</h2>
+              <div class="cluster-list-heading">
+                <h2 id="clusterAssetListTitle">Assets außerhalb des Radius</h2>
                 <p id="clusterOutlierSummary">Die am wenigsten ähnlichen Gesichter stehen zuerst.</p>
+                <div class="cluster-list-filter" role="group" aria-label="Angezeigte Assets">
+                  <button id="clusterShowOutsideBtn" class="cluster-filter-button active" type="button" aria-pressed="true">Außerhalb</button>
+                  <button id="clusterShowInsideBtn" class="cluster-filter-button" type="button" aria-pressed="false">Innerhalb</button>
+                  <button id="clusterShowAllBtn" class="cluster-filter-button" type="button" aria-pressed="false">Alle</button>
+                </div>
               </div>
               <div class="cluster-selection-actions">
-                <button id="clusterSelectAllBtn" class="cluster-button subtle" type="button">Alle markieren</button>
+                <button id="clusterSelectAllBtn" class="cluster-button subtle" type="button">Außerhalb markieren</button>
                 <button id="clusterClearSelectionBtn" class="cluster-button subtle" type="button">Auswahl leeren</button>
                 <button id="clusterDetachSelectedBtn" class="cluster-button danger" type="button" disabled>Personenzuordnung lösen (0)</button>
               </div>
             </div>
             <div id="clusterEmptyOutliers" class="cluster-empty hidden">Bei diesem Radius liegen keine Gesichter außerhalb.</div>
             <div id="clusterOutlierGrid" class="cluster-outlier-grid"></div>
-            <div class="cluster-load-more-wrap"><button id="clusterLoadMoreBtn" class="cluster-button subtle hidden" type="button">Weitere Ausreißer anzeigen</button></div>
+            <div class="cluster-load-more-wrap"><button id="clusterLoadMoreBtn" class="cluster-button subtle hidden" type="button">Weitere anzeigen</button></div>
           </section>
 
           <details class="cluster-panel cluster-centroid-details">
@@ -150,11 +164,14 @@
             <p>Der arithmetische Mittelwert liegt meist innerhalb der Einheitskugel. Für Abstände und den Mittelpunkt der Darstellung wird daraus die normierte Mittelrichtung μ gebildet.</p>
             <label class="cluster-vector-label" for="clusterMeanVector">Arithmetischer Durchschnittsvektor</label>
             <textarea id="clusterMeanVector" readonly spellcheck="false"></textarea>
-            <label class="cluster-vector-label" for="clusterCentroidVector">Normierte Mittelrichtung μ (Clusterzentrum)</label>
+            <label class="cluster-vector-label" for="clusterCentroidVector">Normierte Mittelrichtung μ (ursprüngliches Zentrum)</label>
             <textarea id="clusterCentroidVector" readonly spellcheck="false"></textarea>
+            <label class="cluster-vector-label" for="clusterActiveCenterVector">Aktuelles normiertes Zentrum c</label>
+            <textarea id="clusterActiveCenterVector" readonly spellcheck="false"></textarea>
             <div class="cluster-detail-actions">
               <button id="clusterCopyMeanBtn" class="cluster-button subtle" type="button">Durchschnitt kopieren</button>
-              <button id="clusterCopyCentroidBtn" class="cluster-button subtle" type="button">Mittelrichtung kopieren</button>
+              <button id="clusterCopyCentroidBtn" class="cluster-button subtle" type="button">μ kopieren</button>
+              <button id="clusterCopyActiveCenterBtn" class="cluster-button subtle" type="button">c kopieren</button>
               <button id="clusterExportBtn" class="cluster-button subtle" type="button">Cluster als JSON exportieren</button>
             </div>
           </details>
