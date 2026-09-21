@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Immich Person Review</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div><strong>Immich</strong> <span>Person Review</span></div>
+    <div id="status" class="status">Verbinde…</div>
+  </header>
+  <main>
+    <section id="chooser" class="panel chooser">
+      <h1>Person auswählen</h1>
+      <p>Wähle eine Person, deren Gesichtserkennung du chronologisch prüfen möchtest.</p>
+      <input id="personSearch" type="search" placeholder="Person suchen…" autocomplete="off" />
+      <div id="people" class="people-grid"></div>
+    </section>
+
+    <section id="review" class="review hidden">
+      <div class="review-head panel">
+        <button id="backBtn" class="btn ghost">← Personen</button>
+        <img id="selectedPersonThumb" class="person-avatar large" alt="" />
+        <div class="person-title">
+          <h1 id="selectedPersonName"></h1>
+          <div id="selectedPersonMeta" class="muted"></div>
+        </div>
+        <label class="toggle"><input id="hideReviewed" type="checkbox" /> korrigierte ausblenden</label>
+      </div>
+      <div id="timeline" class="timeline"></div>
+      <div id="empty" class="panel empty hidden">Keine Fotos gefunden.</div>
+    </section>
+  </main>
+
+  <dialog id="reassignDialog">
+    <form method="dialog" class="dialog-card" onsubmit="return false">
+      <div class="dialog-head"><h2>Falsche Zuordnung ändern</h2><button id="closeDialog" class="icon-btn" aria-label="Schließen">×</button></div>
+      <p id="reassignInfo" class="muted"></p>
+      <input id="targetSearch" type="search" placeholder="Andere Person suchen…" autocomplete="off" />
+      <div id="targetPeople" class="target-list"></div>
+      <div class="new-person">
+        <h3>Neue Person</h3>
+        <div class="row"><input id="newPersonName" placeholder="Name" /><input id="newPersonBirthDate" type="date" /><button id="createPersonBtn" class="btn">Anlegen & zuweisen</button></div>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
