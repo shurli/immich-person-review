@@ -1,5 +1,14 @@
 # Immich Person Review
 
+## Version 0.2.0
+
+- Face-Abruf korrigiert: `GET /faces?id=<asset-id>` statt des ungültigen Parameters `assetId`.
+- Asset-Timeline ist paginiert (standardmäßig 40 Fotos pro Seite).
+- Nächste Seite wird automatisch per Infinite Scroll geladen; manueller Ladebutton als Fallback.
+- Face-Daten werden lazy geladen, sobald eine Fotokarte in die Nähe des Viewports kommt.
+- Metadata-Suche lädt keine unnötigen EXIF-/People-Payloads mehr.
+
+
 Eine kleine, eigenständige Review-Oberfläche für Immich-Personenerkennung. Sie nutzt ausschließlich die öffentliche/stabile Immich REST API und greift nicht auf die Immich-Datenbank zu.
 
 ## Funktionen

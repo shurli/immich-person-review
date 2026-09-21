@@ -97,28 +97,45 @@ async function handleApi(req, res, url) {
     const assetsMatch = url.pathname.match(/^\/review-api\/people\/([0-9a-f-]+)\/assets$/i);
     if (req.method === 'GET' && assetsMatch) {
       const personId = assetsMatch[1];
-      const items = [];
-      let page = 1;
-      const maxPages = 1000;
-      while (page <= maxPages) {
-        const r = await immichFetch('/search/metadata', {
-          method: 'POST',
-          body: JSON.stringify({ personIds: [personId], page, size: 250, order: 'asc', withPeople: true, withExif: true, type: 'IMAGE' }),
-        });
-        if (!r.ok) return proxyJson(res, r);
-        const data = await r.json();
-        items.push(...(data.assets?.items || []));
-        if (!data.assets?.nextPage || !(data.assets?.items || []).length) break;
-        const parsed = Number(data.assets.nextPage);
-        page = Number.isFinite(parsed) && parsed > page ? parsed : page + 1;
-      }
-      items.sort((a, b) => new Date(a.fileCreatedAt || a.localDateTime || a.createdAt) - new Date(b.fileCreatedAt || b.localDateTime || b.createdAt));
-      return json(res, 200, { items, count: items.length });
+      const requestedPage = Number(url.searchParams.get('page') || '1');
+      const requestedSize = Number(url.searchParams.get('size') || '40');
+      const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+      const size = Number.isInteger(requestedSize) && requestedSize > 0 ? Math.min(requestedSize, 100) : 40;
+
+      const r = await immichFetch('/search/metadata', {
+        method: 'POST',
+        body: JSON.stringify({
+          personIds: [personId],
+          page,
+          size,
+          order: 'asc',
+          withPeople: false,
+          withExif: false,
+          type: 'IMAGE',
+        }),
+      });
+      if (!r.ok) return proxyJson(res, r);
+
+      const data = await r.json();
+      const assets = data.assets || {};
+      const items = assets.items || [];
+      const rawNextPage = assets.nextPage;
+      const nextPage = rawNextPage == null || rawNextPage === '' ? null : Number(rawNextPage);
+      const total = Number.isFinite(Number(assets.total)) ? Number(assets.total) : null;
+
+      return json(res, 200, {
+        items,
+        page,
+        size,
+        nextPage: Number.isFinite(nextPage) ? nextPage : null,
+        total,
+      });
     }
 
     const facesMatch = url.pathname.match(/^\/review-api\/assets\/([0-9a-f-]+)\/faces$/i);
     if (req.method === 'GET' && facesMatch) {
-      return proxyJson(res, await immichFetch(`/faces?assetId=${encodeURIComponent(facesMatch[1])}`));
+      // Immich GET /faces expects the asset UUID in the required `id` query parameter.
+      return proxyJson(res, await immichFetch(`/faces?id=${encodeURIComponent(facesMatch[1])}`));
     }
 
     const thumbMatch = url.pathname.match(/^\/review-api\/assets\/([0-9a-f-]+)\/thumbnail$/i);
