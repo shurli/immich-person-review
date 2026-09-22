@@ -1,0 +1,18 @@
+services:
+  immich-person-review:
+    build: .
+    image: immich-person-review:0.13.0
+    container_name: immich-person-review
+    restart: unless-stopped
+    ports:
+      - "3030:3000"
+    env_file:
+      - .env
+    environment:
+      PORT: "3000"
+    networks:
+      - immich
+networks:
+  immich:
+    external: true
+    name: ${IMMICH_NETWORK:-immich_default}

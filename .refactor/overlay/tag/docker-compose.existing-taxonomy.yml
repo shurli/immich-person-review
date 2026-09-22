@@ -1,0 +1,6 @@
+# Use with docker-compose.yml to reuse an EXISTING taxonomy volume.
+# TAG_TAXONOMY_VOLUME must name the existing volume; never run both old and new editors.
+volumes:
+  tag-taxonomy:
+    external: true
+    name: ${TAG_TAXONOMY_VOLUME:?Set TAG_TAXONOMY_VOLUME to the existing taxonomy volume name}

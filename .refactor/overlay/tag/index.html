@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Immich Tag Manager</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><strong>Immich</strong><span>Tag Manager</span><span id="appVersion" class="version-badge">v...</span></div>
+    <div id="status" class="status" role="status">Verbinde...</div>
+  </header>
+  <main>
+    <p id="connectionInfo" class="connection-info" role="status"></p>
+    <section class="panel chooser" aria-label="Tag-Verwaltung">
+<!-- TAG_EDITOR -->
+    </section>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
