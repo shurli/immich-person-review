@@ -46,8 +46,8 @@ jobs:
           docker build -t split-tag "$RUNNER_TEMP/split/tag"
           docker run --rm --entrypoint node split-person --check server.mjs
           docker run --rm -d --name split-tag-smoke -p 127.0.0.1:3039:3000 split-tag
-          trap 'docker rm -f split-tag-smoke || true' EXIT
-          curl --retry 15 --retry-delay 1 --retry-connrefused --fail http://127.0.0.1:3039/healthz
+          trap 'docker logs split-tag-smoke; docker rm -f split-tag-smoke || true' EXIT
+          curl --retry 15 --retry-delay 1 --retry-all-errors --retry-max-time 30 --max-time 5 --fail http://127.0.0.1:3039/healthz
           curl --fail http://127.0.0.1:3039/tag-api/tags | python -c 'import json,sys; d=json.load(sys.stdin); assert len(d["document"]["concepts"]) == 350'
       - name: Commit only the verified person app to the feature branch
         working-directory: working
