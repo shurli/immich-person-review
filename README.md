@@ -2,7 +2,11 @@
 
 Eigenständige Docker-Web-App zum Prüfen und Korrigieren von Immich-Personenzuordnungen.
 
-## Version 0.10.0
+## Version 0.13.0
+
+Die Tag-Verwaltung wurde in das eigenstaendige Repository `shurli/immich-tag-manager` ausgelagert. Alle Personen- und Gesichtsfunktionen bleiben erhalten. Hinweise zur Uebernahme der bisherigen Tag-Datei stehen in `MIGRATION.md`.
+
+### Bisheriger Personen-Funktionsumfang
 
 Neu in dieser Version:
 
@@ -149,7 +153,7 @@ docker compose logs -f immich-person-review
 ## Nur Docker
 
 ```bash
-docker build -t immich-person-review:0.10.0 .
+docker build -t immich-person-review:0.13.0 .
 
 docker run -d \
   --name immich-person-review \
@@ -165,7 +169,7 @@ docker run -d \
   -e IMMICH_DB_USER=immich_person_review \
   -e IMMICH_DB_PASSWORD='DEIN_READ_ONLY_PASSWORT' \
   -e IMMICH_DB_NAME=immich \
-  immich-person-review:0.10.0
+  immich-person-review:0.13.0
 ```
 
 ## Cluster-Mathematik
@@ -278,27 +282,3 @@ npm install
 npm test
 npm start
 ```
-
-
-## KI-Tag-Taxonomie verwalten
-
-Ab Version 0.11.0 gibt es im Hauptbereich den Reiter **KI-Tags**. Dort wird die JSON-Taxonomie als Baum dargestellt. Tags und Kategorien können angelegt, bearbeitet, kopiert, gelöscht und per Drag & Drop zwischen Kategorien verschoben werden. Änderungen werden erst mit **JSON speichern** persistiert. Vor jedem Speichern wird neben der JSON-Datei eine `.bak`-Sicherung angelegt.
-
-Standardmäßig liegt die Datei unter `data/tags.json`. Mit `TAG_TAXONOMY_PATH` kann ein anderer Pfad gesetzt werden. Das mitgelieferte `docker-compose.yml` bindet `/app/data` als benanntes Volume `tag-taxonomy` ein, damit Änderungen Container-Neustarts und Neuaufbau überleben.
-
-### SigLIP2 Tag-Preview / Threshold-Kalibrierung
-
-In der Ansicht **KI-Tags** kann für jeden Tag eine Preview gegen die bereits in Immich gespeicherten `smart_search`-Embeddings berechnet werden. Die App erzeugt nur die Text-Embeddings der konfigurierten Prompts über den bestehenden Immich-Machine-Learning-Dienst und bewertet anschließend Kandidaten aus PostgreSQL.
-
-Dafür werden zusätzlich benötigt:
-
-- `SELECT` auf `smart_search` und `asset` für den konfigurierten DB-Benutzer
-- Netzwerkzugriff auf `IMMICH_MACHINE_LEARNING_URL` (Standard: `http://immich-machine-learning:3003`)
-- ein vollständig mit dem in `data/tags.json` unter `target_model` konfigurierten Modell neu indizierter Smart-Search-Bestand
-
-Der Preview-Threshold kann live verschoben und anschließend mit **Als Threshold übernehmen** in den Tag übernommen werden. Persistiert wird er erst mit **JSON speichern**.
-
-
-## Tag-Taxonomie ab 0.12.2
-
-Die mitgelieferte Taxonomie liegt unveränderlich unter `/app/defaults/tags.json`. Änderungen werden persistent unter `/app/storage/tags.json` gespeichert. Beim ersten Start wird die persistente Datei automatisch aus den Defaults erzeugt. Dadurch kann ein leeres oder älteres Docker-Volume die mitgelieferte Taxonomie nicht mehr verdecken.
