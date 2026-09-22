@@ -1,0 +1,31 @@
+name: Refactor verification workspace
+on:
+  push:
+    branches: [refactor/extract-tag-manager]
+    paths: [.github/workflows/refactor-workbench.yml]
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: refactor-source
+          retention-days: 3
+          path: |
+            *.mjs
+            *.json
+            Dockerfile
+            README.md
+            docker-compose*.yml
+            public/
+            data/
+            node_modules/
