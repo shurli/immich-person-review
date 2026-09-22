@@ -4,23 +4,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Pool } from 'pg';
 import { buildVectorCluster, projectEmbeddingToCluster } from './cluster-math.mjs';
-import { parseVector, cosineSimilarity, aggregatePromptScores } from './tag-calibration.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
 const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const appVersion = packageInfo.version || 'unknown';
-const tagTaxonomyPath = path.resolve(process.env.TAG_TAXONOMY_PATH || path.join(__dirname, 'storage', 'tags.json'));
-const tagTaxonomyDefaultPath = path.resolve(process.env.TAG_TAXONOMY_DEFAULT_PATH || path.join(__dirname, 'defaults', 'tags.json'));
-const tagTaxonomyBackupPath = `${tagTaxonomyPath}.bak`;
 const port = Number(process.env.PORT || 3000);
 const immichUrl = (process.env.IMMICH_URL || '').replace(/\/$/, '');
 const immichExternalUrl = (process.env.IMMICH_EXTERNAL_URL || immichUrl).replace(/\/$/, '');
 const apiPrefixRaw = process.env.IMMICH_API_PREFIX ?? '/api';
 const apiPrefix = apiPrefixRaw ? '/' + apiPrefixRaw.replace(/^\/+|\/+$/g, '') : '';
 const apiKey = process.env.IMMICH_API_KEY || '';
-const immichMachineLearningUrl = (process.env.IMMICH_MACHINE_LEARNING_URL || 'http://immich-machine-learning:3003').replace(/\/?$/, '/');
-const tagTextEmbeddingCache = new Map();
 const unnamedStatsCache = new Map();
 const UNNAMED_STATS_TTL_MS = 5 * 60 * 1000;
 const duplicateFaceScans = new Map();
@@ -447,153 +441,6 @@ async function parseBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-function normalizeTagPath(value) {
-  return String(value || '').split('/').map((part) => part.trim()).filter(Boolean).join('/');
-}
-
-function validateTagTaxonomy(document) {
-  if (!document || typeof document !== 'object' || Array.isArray(document)) throw new Error('Tag-JSON muss ein Objekt sein.');
-  if (!Array.isArray(document.concepts)) throw new Error('Tag-JSON benötigt ein concepts-Array.');
-  const ids = new Set();
-  const tags = new Set();
-  for (const [index, concept] of document.concepts.entries()) {
-    if (!concept || typeof concept !== 'object') throw new Error(`concepts[${index}] ist ungültig.`);
-    const id = String(concept.id || '').trim();
-    const tag = normalizeTagPath(concept.tag);
-    if (!id) throw new Error(`concepts[${index}] hat keine id.`);
-    if (!tag) throw new Error(`concepts[${index}] hat keinen tag-Pfad.`);
-    if (ids.has(id)) throw new Error(`Doppelte Tag-ID: ${id}`);
-    if (tags.has(tag.toLocaleLowerCase('de'))) throw new Error(`Doppelter Tag-Pfad: ${tag}`);
-    ids.add(id);
-    tags.add(tag.toLocaleLowerCase('de'));
-    if (concept.prompts_en != null && !Array.isArray(concept.prompts_en)) throw new Error(`${id}: prompts_en muss ein Array sein.`);
-  }
-  if (document.folders != null) {
-    if (!Array.isArray(document.folders)) throw new Error('folders muss ein Array sein.');
-    const folders = new Set();
-    for (const raw of document.folders) {
-      const folder = normalizeTagPath(typeof raw === 'string' ? raw : raw?.path);
-      if (!folder) throw new Error('Leerer Ordnerpfad in folders.');
-      const key = folder.toLocaleLowerCase('de');
-      if (folders.has(key)) throw new Error(`Doppelter Ordnerpfad: ${folder}`);
-      folders.add(key);
-    }
-  }
-  return true;
-}
-
-function ensureTagTaxonomyFile() {
-  if (fs.existsSync(tagTaxonomyPath)) return;
-  fs.mkdirSync(path.dirname(tagTaxonomyPath), { recursive: true });
-  if (fs.existsSync(tagTaxonomyDefaultPath)) {
-    fs.copyFileSync(tagTaxonomyDefaultPath, tagTaxonomyPath);
-    console.log(`Initialized tag taxonomy from ${tagTaxonomyDefaultPath} -> ${tagTaxonomyPath}`);
-    return;
-  }
-  const empty = { schema_version: 2, taxonomy_version: 'custom-v1', tag_language: 'de', prompt_language: 'en', folders: ['KI'], concepts: [] };
-  fs.writeFileSync(tagTaxonomyPath, `${JSON.stringify(empty, null, 2)}\n`, 'utf8');
-  console.warn(`No default tag taxonomy found at ${tagTaxonomyDefaultPath}; created empty taxonomy at ${tagTaxonomyPath}`);
-}
-
-function readTagTaxonomy() {
-  ensureTagTaxonomyFile();
-  const document = JSON.parse(fs.readFileSync(tagTaxonomyPath, 'utf8'));
-  validateTagTaxonomy(document);
-  return document;
-}
-
-function writeTagTaxonomy(document) {
-  validateTagTaxonomy(document);
-  document.concept_count = document.concepts.length;
-  document.updated_at = new Date().toISOString();
-  fs.mkdirSync(path.dirname(tagTaxonomyPath), { recursive: true });
-  if (fs.existsSync(tagTaxonomyPath)) fs.copyFileSync(tagTaxonomyPath, tagTaxonomyBackupPath);
-  const tmp = `${tagTaxonomyPath}.${process.pid}.${Date.now()}.tmp`;
-  fs.writeFileSync(tmp, `${JSON.stringify(document, null, 2)}\n`, 'utf8');
-  fs.renameSync(tmp, tagTaxonomyPath);
-  return document;
-}
-
-
-async function encodeTagPrompt(text, modelName, language = 'en-US') {
-  const key = `${modelName}\0${language}\0${text}`;
-  if (tagTextEmbeddingCache.has(key)) return tagTextEmbeddingCache.get(key);
-  const form = new FormData();
-  form.append('entries', JSON.stringify({ clip: { textual: { modelName, options: { language } } } }));
-  form.append('text', text);
-  let response;
-  try {
-    response = await fetch(new URL('predict', immichMachineLearningUrl), { method: 'POST', body: form, signal: AbortSignal.timeout(120000) });
-  } catch (error) {
-    const wrapped = new Error(`Immich Machine Learning ist nicht erreichbar (${immichMachineLearningUrl}): ${error.message}`);
-    wrapped.status = 503;
-    throw wrapped;
-  }
-  if (!response.ok) {
-    const detail = (await response.text()).slice(0, 500);
-    const error = new Error(`Text-Embedding fehlgeschlagen: HTTP ${response.status} ${detail}`);
-    error.status = 502;
-    throw error;
-  }
-  const data = await response.json();
-  if (!data?.clip) throw new Error('Immich ML hat kein clip-Embedding zurückgegeben.');
-  const embedding = parseVector(data.clip);
-  tagTextEmbeddingCache.set(key, embedding);
-  return embedding;
-}
-
-async function getTagCalibrationPreview(concept, { sampleSize = 48, candidatePerPrompt = 80 } = {}) {
-  const pool = requireVectorDatabase();
-  const prompts = (concept.prompts_en || []).map((item) => String(item).trim()).filter(Boolean);
-  if (!prompts.length) { const error = new Error('Der Tag hat keine Prompts.'); error.status = 400; throw error; }
-  const taxonomy = readTagTaxonomy();
-  const modelName = taxonomy.target_model || 'ViT-SO400M-16-SigLIP2-384__webli';
-  const promptVectors = [];
-  for (const prompt of prompts) promptVectors.push({ prompt, vector: await encodeTagPrompt(prompt, modelName, 'en-US') });
-  const dimension = promptVectors[0].vector.length;
-  if (promptVectors.some((item) => item.vector.length !== dimension)) throw new Error('Prompt-Vektoren haben unterschiedliche Dimensionen.');
-
-  const candidates = new Map();
-  const limit = Math.max(10, Math.min(250, Number(candidatePerPrompt) || 80));
-  for (const { vector } of promptVectors) {
-    const vectorText = `[${vector.join(',')}]`;
-    const result = await pool.query(
-      `SELECT ss."assetId", ss.embedding::text AS embedding,
-              a."originalFileName", a."fileCreatedAt", a."localDateTime", a."createdAt"
-         FROM smart_search ss
-         JOIN asset a ON a.id = ss."assetId"
-        WHERE a."deletedAt" IS NULL
-        ORDER BY ss.embedding <=> $1::vector
-        LIMIT $2`,
-      [vectorText, limit],
-    );
-    for (const row of result.rows) candidates.set(row.assetId, row);
-  }
-
-  const mode = concept.prompt_aggregation || 'top2_mean';
-  const rows = [];
-  for (const row of candidates.values()) {
-    const imageVector = parseVector(row.embedding);
-    if (imageVector.length !== dimension) {
-      const error = new Error(`Embedding-Dimension passt nicht: smart_search=${imageVector.length}, Text=${dimension}. Ist Immich bereits vollständig mit ${modelName} neu indiziert?`);
-      error.status = 409;
-      throw error;
-    }
-    const promptScores = promptVectors.map(({ prompt, vector }) => ({ prompt, score: cosineSimilarity(imageVector, vector) }));
-    const score = aggregatePromptScores(promptScores.map((item) => item.score), mode);
-    rows.push({
-      assetId: row.assetId,
-      originalFileName: row.originalFileName || '',
-      fileCreatedAt: row.fileCreatedAt || row.localDateTime || row.createdAt || null,
-      score,
-      promptScores,
-    });
-  }
-  rows.sort((a, b) => b.score - a.score);
-  const size = Math.max(12, Math.min(120, Number(sampleSize) || 48));
-  return { modelName, dimension, aggregation: mode, prompts, totalCandidates: rows.length, items: rows.slice(0, size) };
-}
-
 async function proxyJson(res, response) {
   const text = await response.text();
   if (response.status === 204 || !text) {
@@ -852,42 +699,6 @@ async function handleApi(req, res, url) {
 
 
 
-
-    const tagCalibrationMatch = url.pathname.match(/^\/review-api\/tags\/([^/]+)\/calibration-preview$/);
-    if (req.method === 'POST' && tagCalibrationMatch) {
-      try {
-        const body = await parseBody(req);
-        const taxonomy = readTagTaxonomy();
-        const conceptId = decodeURIComponent(tagCalibrationMatch[1]);
-        const storedConcept = taxonomy.concepts.find((item) => item.id === conceptId);
-        const concept = body.concept && body.concept.id === conceptId ? body.concept : storedConcept;
-        if (!concept) return json(res, 404, { message: 'Tag nicht gefunden.' });
-        return json(res, 200, await getTagCalibrationPreview(concept, body));
-      } catch (error) {
-        if (error.status) return json(res, error.status, { message: error.message });
-        throw error;
-      }
-    }
-
-    if (req.method === 'GET' && url.pathname === '/review-api/tags') {
-      try {
-        const document = readTagTaxonomy();
-        return json(res, 200, { document, path: tagTaxonomyPath, writable: true });
-      } catch (error) {
-        return json(res, 500, { message: `Tag-JSON konnte nicht gelesen werden: ${error.message}` });
-      }
-    }
-
-    if (req.method === 'PUT' && url.pathname === '/review-api/tags') {
-      try {
-        const body = await parseBody(req);
-        const document = body.document ?? body;
-        const saved = writeTagTaxonomy(document);
-        return json(res, 200, { ok: true, document: saved, path: tagTaxonomyPath });
-      } catch (error) {
-        return json(res, 400, { message: `Tag-JSON konnte nicht gespeichert werden: ${error.message}` });
-      }
-    }
 
     if (req.method === 'POST' && url.pathname === '/review-api/maintenance/duplicate-person-faces/scan') {
       try {

@@ -1,0 +1,11 @@
+.git
+.github
+.refactor
+node_modules
+.env
+.env.*
+storage
+*.bak
+*.test.mjs
+README.md
+MIGRATION.md

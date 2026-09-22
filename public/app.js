@@ -1,4 +1,3 @@
-import { createTagManager } from './tags.js';
 import {
   clusterCenterVector,
   describeClusterCenter,
@@ -76,7 +75,6 @@ let pageObserver;
 let unnamedStatsObserver;
 let clusterResizeObserver;
 
-let tagManager;
 
 async function api(url, options = {}) {
   const r = await fetch(url, {
@@ -214,16 +212,12 @@ $('#personSearch').addEventListener('input', (e) => {
 
 function setChooserView(view) {
   const unnamed = view === 'unnamed';
-  const tags = view === 'tags';
-  const review = !unnamed && !tags;
+  const review = !unnamed;
   $('#reviewTab').classList.toggle('active', review);
   $('#unnamedTab').classList.toggle('active', unnamed);
-  $('#tagsTab').classList.toggle('active', tags);
   $('#namedChooser').classList.toggle('hidden', !review);
   $('#unnamedChooser').classList.toggle('hidden', !unnamed);
-  $('#tagChooser').classList.toggle('hidden', !tags);
   if (unnamed) renderUnnamedPeople();
-  if (tags) tagManager?.load().catch((error) => toast(error.message));
 }
 
 function initUnnamedObserver() {
@@ -400,7 +394,6 @@ async function applyDuplicateFaceBoxes() {
 
 $('#reviewTab').onclick = () => setChooserView('review');
 $('#unnamedTab').onclick = () => setChooserView('unnamed');
-$('#tagsTab').onclick = () => setChooserView('tags');
 $('#refreshUnnamedThumbsBtn').onclick = refreshUnnamedThumbnails;
 $('#duplicateFacesBatchBtn').onclick = scanDuplicateFaceBoxes;
 $('#applyDuplicateFacesBtn').onclick = applyDuplicateFaceBoxes;
@@ -2070,7 +2063,5 @@ $('#backBtn').onclick = () => {
 };
 $('#hideReviewed').onchange = (e) => state.reviewed.forEach((id) => document.querySelector(`[data-asset="${id}"]`)?.classList.toggle('hidden', e.target.checked));
 
-tagManager = createTagManager({ api, toast });
-tagManager.init();
 
 init();

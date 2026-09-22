@@ -1,7 +1,7 @@
 services:
   immich-person-review:
     build: .
-    image: immich-person-review:0.12.2
+    image: immich-person-review:0.13.0
     container_name: immich-person-review
     restart: unless-stopped
     ports:
@@ -10,17 +10,9 @@ services:
       - .env
     environment:
       PORT: "3000"
-      TAG_TAXONOMY_PATH: /app/storage/tags.json
-      TAG_TAXONOMY_DEFAULT_PATH: /app/defaults/tags.json
-    volumes:
-      - tag-taxonomy:/app/storage
     networks:
       - immich
-
-volumes:
-  tag-taxonomy:
-
 networks:
   immich:
     external: true
-    name: immich_default
+    name: ${IMMICH_NETWORK:-immich_default}

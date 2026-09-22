@@ -16,7 +16,6 @@
       <div class="view-tabs">
         <button id="reviewTab" class="view-tab active" type="button">Person prüfen</button>
         <button id="unnamedTab" class="view-tab" type="button">Unbenannte Personen</button>
-        <button id="tagsTab" class="view-tab" type="button">KI-Tags</button>
       </div>
       <div id="namedChooser">
       <h1>Person auswählen</h1>
@@ -32,18 +31,6 @@
         <div id="unnamedPeople" class="unnamed-grid"></div>
       </div>
 
-      <div id="tagChooser" class="hidden tag-manager">
-        <div class="tag-manager-head">
-          <div><h1>KI-Tag-Taxonomie</h1><p>Deutsche Immich-Tags und englische SigLIP2-Prompts direkt aus der JSON-Datei verwalten.</p></div>
-          <div class="tag-manager-save"><span id="tagDirtyState">Gespeichert</span><button id="tagReloadBtn" class="btn ghost" type="button">Neu laden</button><button id="tagSaveBtn" class="btn" type="button" disabled>JSON speichern</button></div>
-        </div>
-        <div class="tag-manager-meta"><span id="tagStats"></span><code id="tagSourcePath"></code></div>
-        <div class="tag-toolbar"><input id="tagSearch" type="search" placeholder="Tags, Pfade oder Prompts suchen…"><button id="tagAddFolderBtn" class="btn ghost" type="button">+ Kategorie</button><button id="tagAddBtn" class="btn" type="button">+ Tag</button></div>
-        <div class="tag-admin-layout">
-          <aside class="tag-tree-panel"><div class="tag-tree-help">Per Drag & Drop auf eine Kategorie verschieben</div><div id="tagTree" class="tag-tree"></div></aside>
-          <section id="tagDetails" class="tag-details"></section>
-        </div>
-      </div>
     </section>
 
     <section id="review" class="review hidden">
