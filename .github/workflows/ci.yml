@@ -1,0 +1,27 @@
+name: Person app checks
+on:
+  push:
+    branches: [main, refactor/extract-tag-manager]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - run: npm run check
+      - name: Verify standalone Docker build
+        run: |
+          docker build -t immich-person-review:test .
+          docker run --rm --entrypoint node immich-person-review:test --check server.mjs
